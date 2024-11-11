@@ -9,3 +9,9 @@ resource "aws_s3_bucket" "processed_bucket" {
 resource "aws_s3_bucket" "lambda_code" {
     bucket = var.lambda_bucket
 }
+
+resource "aws_s3_object" "lambda_code" {
+  bucket = aws_s3_bucket.lambda_code.id
+  key = "function.zip"
+  source = "${path.module}/../function.zip"
+}
