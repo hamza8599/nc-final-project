@@ -13,3 +13,7 @@ variable "processed_bucket" {
 variable "lambda_bucket" {
     default = "dimensional-transformers-lambda-bucket"
 }
+
+variable "lambda_ingestion" {
+  default = "lambda-ingestion-handler"
+}

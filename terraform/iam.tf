@@ -42,3 +42,26 @@ resource "aws_iam_policy" "s3_lambda_policy" {
 }
 
 
+resource "aws_iam_policy"  "lambda_cloudwatch_policy" {
+  name = "${var.lambda_ingestion}-lambda-cloudwatch-policy"
+    policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+         
+      },
+    ]
+  })
+}
+    
+resource "aws_iam_role_policy_attachment" "lambda_cloud_watch_policy" {
+  role = aws_iam_role.lambda_executive_role.id
+  policy_arn = aws_iam_policy.lambda_cloudwatch_policy.arn
+}
