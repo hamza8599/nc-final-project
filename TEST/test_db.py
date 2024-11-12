@@ -1,5 +1,5 @@
-from DB.data_extraction import data_extract
-from DB.connection import connect_db,close_db
+from DB.data_extraction import data_extract,connect_db,close_db
+# from DB.data_extraction import connect_db,close_db
 import pytest
 
 def test_connecting_to_database():
