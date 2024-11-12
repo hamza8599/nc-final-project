@@ -11,7 +11,7 @@ resource "aws_sns_topic_subscription" "email-target" {
 resource "aws_cloudwatch_log_metric_filter" "error_filter" {
   name           = "ingestion-error-filter"
   pattern        = "Event recieved" #TODO
-  log_group_name = aws_cloudwatch_log_group.lambda_ingestion_group.name
+  log_group_name = "/aws/lambda/${var.lambda_ingestion}"
 
   metric_transformation {
     name      = "ErrorCount"
@@ -27,12 +27,14 @@ resource "aws_cloudwatch_metric_alarm" "ingestion_sns_alarm" {
   evaluation_periods  = 1
   metric_name         = "ErrorCount"
   namespace           = "Lambda/test"
-  period              = 60
-  statistic           = "Average"
+  period              = 120
+  statistic           = "Sum"
   threshold           = 1
   alarm_description   = "We Failed"
   actions_enabled     = "true"
   alarm_actions       = [aws_sns_topic.ingestion-topic.arn]
   ok_actions          = [aws_sns_topic.ingestion-topic.arn]
+  insufficient_data_actions = []
+  treat_missing_data = "notBreaching"
   
 }

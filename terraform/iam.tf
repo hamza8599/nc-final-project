@@ -41,9 +41,14 @@ resource "aws_iam_policy" "s3_lambda_policy" {
   })
 }
 
-resource "aws_cloudwatch_log_group" "lambda_ingestion_group" {
-  name = var.lambda_ingestion
-}
+# resource "aws_cloudwatch_log_group" "lambda_ingestion_group" {
+#   name = var.lambda_ingestion
+# }
+
+# resource "aws_cloudwatch_log_stream" "testing" {
+#   name           = "testing sns"
+#   log_group_name = aws_cloudwatch_log_group.lambda_ingestion_group.name
+# }
 
 resource "aws_iam_policy"  "lambda_cloudwatch_policy" {
   name = "${var.lambda_ingestion}-lambda-cloudwatch-policy"
@@ -57,7 +62,7 @@ resource "aws_iam_policy"  "lambda_cloudwatch_policy" {
           "logs:PutLogEvents"
         ]
         Effect   = "Allow"
-        Resource = "arn:aws:logs:eu-west-2:137068251264:log-group:lambda-ingestion-handler:*"
+        Resource = "*"
          
       },
     ]
@@ -81,7 +86,7 @@ resource "aws_iam_policy"  "lambda_sns_policy" {
     ],
     "Effect" : "Allow",
     "Resource" : [
-         aws_sns_topic.ingestion-topic.arn
+         "arn:aws:sns:eu-west-2:137068251264:ingestion-topic"
     ]
 }]
     })
