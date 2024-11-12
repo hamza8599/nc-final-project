@@ -41,6 +41,9 @@ resource "aws_iam_policy" "s3_lambda_policy" {
   })
 }
 
+resource "aws_cloudwatch_log_group" "lambda_ingestion_group" {
+  name = var.lambda_ingestion
+}
 
 resource "aws_iam_policy"  "lambda_cloudwatch_policy" {
   name = "${var.lambda_ingestion}-lambda-cloudwatch-policy"
@@ -54,7 +57,7 @@ resource "aws_iam_policy"  "lambda_cloudwatch_policy" {
           "logs:PutLogEvents"
         ]
         Effect   = "Allow"
-        Resource = "*"
+        Resource = "arn:aws:logs:eu-west-2:137068251264:log-group:lambda-ingestion-handler:*"
          
       },
     ]
@@ -64,4 +67,27 @@ resource "aws_iam_policy"  "lambda_cloudwatch_policy" {
 resource "aws_iam_role_policy_attachment" "lambda_cloud_watch_policy" {
   role = aws_iam_role.lambda_executive_role.id
   policy_arn = aws_iam_policy.lambda_cloudwatch_policy.arn
+}
+
+resource "aws_iam_policy"  "lambda_sns_policy" {
+  name = "${var.lambda_ingestion}-lambda-sns-policy"
+    policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+    "Action" : [
+        "sns:Publish",
+        "sns:Subscribe"
+    ],
+    "Effect" : "Allow",
+    "Resource" : [
+         aws_sns_topic.ingestion-topic.arn
+    ]
+}]
+    })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sns_policy_attachemnet" {
+  role = aws_iam_role.lambda_executive_role.id
+  policy_arn = aws_iam_policy.lambda_sns_policy.arn
 }
