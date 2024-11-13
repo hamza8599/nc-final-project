@@ -39,15 +39,22 @@ def store_secret(table_name,last_updated):
      secrets_manager_client = boto3.client('secretsmanager')
      secret_exist=existing_secret(secrets_manager_client,table_name)
      if not secret_exist:
-        response = secrets_manager_client.create_secret(
-                Name=table_name,  
-                SecretString=str(last_updated),  
-            )
+        try:
+            response = secrets_manager_client.create_secret(
+                    Name=table_name,  
+                    SecretString=str(last_updated),  
+                )
+        except ClientError as e:
+            print(e)
      else:
-         response=secrets_manager_client.put_secret_value(
-             SecretId=table_name,
-             SecretString=str(last_updated) 
-             )
+         try:
+            response=secrets_manager_client.put_secret_value(
+                SecretId=table_name,
+                SecretString=str(last_updated) 
+                )
+         except ClientError as e:
+             print(e)
+
 
 
 def format_to_parquet(data, conn, table_name):
@@ -104,8 +111,10 @@ def data_extract():
             s3_key=f'{table[0]}/{year}/{month}/{day}/{timestamp}'
   
             
-        
-            s3_client.put_object(Bucket='hamza-test-bucket', Key=s3_key, Body=parquet_buffer)
+            try:
+                s3_client.put_object(Bucket='hamza-test-bucket', Key=s3_key, Body=parquet_buffer)
+            except ClientError as e:
+                print(e)
     
     close_db(conn)
 
