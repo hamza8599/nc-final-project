@@ -7,14 +7,18 @@ import pyarrow as pa
 from pg8000.native import Connection
 import os
 from dotenv import load_dotenv
+import json
 load_dotenv()
 
-def connect_db():
-    user=os.environ['USER']
-    pswd=os.environ['PASSWORD']
-    db=os.environ['DATABASE']
-    port=os.environ['PORT']
-    host=os.environ['HOST']
+def connect_db(secret_name):
+    secrets_manager_client = boto3.client('secretsmanager')
+    response=secrets_manager_client.get_secret_value(SecretId=secret_name)
+    secret_dict=json.loads(response['SecretString'])
+    user=secret_dict['username']
+    pswd=secret_dict['password']
+    db=secret_dict['dbname']
+    port=secret_dict['port']
+    host=secret_dict['host']
 
     conn = Connection(user=user, password=pswd, database=db, host=host, port=port)
     return conn
@@ -33,6 +37,7 @@ def format_to_parquet(data, conn, table_name):
     columns = [col["name"] for col in conn.columns]
     df = pd.DataFrame(data, columns=columns)
     last_updated = df['last_updated'].max()
+    store_secret(table_name,last_updated)
     table = pa.Table.from_pandas(df)
     return table
 
@@ -45,7 +50,7 @@ def write_table_to_parquet_buffer(pyarrow_table):
 
 
 def data_extract():
-    conn = connect_db()
+    conn = connect_db('psql_creds')
     s3_client = boto3.client('s3')
     secret_manager_client = boto3.client('secretsmanager')
 
@@ -68,14 +73,20 @@ def data_extract():
 
         
         data = conn.run(query)
-        print(f"New Data: {data}")
+        # print(f"New Data: {data}")
 
         if data:
             formatted_data = format_to_parquet(data, conn, table[0])
             parquet_buffer = write_table_to_parquet_buffer(formatted_data)
+            timestamp = table[0]+" "+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            year=last_updated_obj.year
+            month=last_updated_obj.strftime('%B')
+            day=last_updated_obj.day
+            s3_key=f'{table[0]}/{year}/{month}/{day}/{timestamp}'
+            print(year,month,day)
             
         
-            s3_client.put_object(Bucket='hamza-test-bucket', Key=f'data/{table[0]}.parquet', Body=parquet_buffer)
+            s3_client.put_object(Bucket='hamza-test-bucket', Key=s3_key, Body=parquet_buffer)
     
     close_db(conn)
 
