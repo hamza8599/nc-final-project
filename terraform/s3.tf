@@ -12,6 +12,6 @@ resource "aws_s3_bucket" "lambda_code" {
 
 resource "aws_s3_object" "lambda_code" {
   bucket = aws_s3_bucket.lambda_code.id
-  key = "function.zip"
-  source = "${path.module}/../function.zip"
+  key = "ingestion-lambda.zip"
+  source = "${path.module}/../ingestion-lambda.zip"
 }

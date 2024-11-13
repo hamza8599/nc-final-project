@@ -33,22 +33,12 @@ resource "aws_iam_policy" "s3_lambda_policy" {
           "s3:PutObject"
         ]
         Effect   = "Allow"
-        Resource = ["${aws_s3_bucket.ingestion_bucket.arn}", 
-        "${aws_s3_bucket.processed_bucket.arn}"
-        ]
+        Resource = [aws_s3_bucket.ingestion_bucket.arn, aws_s3_bucket.processed_bucket.arn]
       },
     ]
   })
 }
 
-# resource "aws_cloudwatch_log_group" "lambda_ingestion_group" {
-#   name = var.lambda_ingestion
-# }
-
-# resource "aws_cloudwatch_log_stream" "testing" {
-#   name           = "testing sns"
-#   log_group_name = aws_cloudwatch_log_group.lambda_ingestion_group.name
-# }
 
 resource "aws_iam_policy"  "lambda_cloudwatch_policy" {
   name = "${var.lambda_ingestion}-lambda-cloudwatch-policy"
@@ -86,13 +76,48 @@ resource "aws_iam_policy"  "lambda_sns_policy" {
     ],
     "Effect" : "Allow",
     "Resource" : [
-         "arn:aws:sns:eu-west-2:137068251264:ingestion-topic"
+         aws_sns_topic.ingestion-topic.arn
     ]
 }]
     })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_sns_policy_attachemnet" {
+resource "aws_iam_role_policy_attachment" "lambda_sns_policy_attachment" {
   role = aws_iam_role.lambda_executive_role.id
   policy_arn = aws_iam_policy.lambda_sns_policy.arn
+}
+
+resource "aws_iam_policy" "secrets_manager_policy" {
+  name = "${var.lambda_ingestion}-lambda-sm-policy"
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:GetResourcePolicy",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:ListSecretVersionIds"
+            ],
+            "Resource": [
+                aws_secretsmanager_secret.secrets_manager.arn
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": "secretsmanager:ListSecrets",
+            "Resource": "*"
+        }
+    ]
+})
+}
+
+resource "aws_secretsmanager_secret" "secrets_manager" {
+  name = "ingestion-secrets-manager2"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sm_policy_attachment" {
+  role = aws_iam_role.lambda_executive_role.id
+  policy_arn = aws_iam_policy.secrets_manager_policy.arn
 }
