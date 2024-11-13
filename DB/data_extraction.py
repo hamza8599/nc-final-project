@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 import json
 from botocore.exceptions import ClientError
+import logging
 load_dotenv()
 
 def connect_db(secret_name):
@@ -73,7 +74,11 @@ def write_table_to_parquet_buffer(pyarrow_table):
 
 
 
-def data_extract():
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+
+def lambda_handler(event, context):
     conn = connect_db('psql_creds')
     s3_client = boto3.client('s3')
     secret_manager_client = boto3.client('secretsmanager')
