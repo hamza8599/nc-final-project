@@ -30,10 +30,19 @@ def close_db(conn):
 
 def existing_secret(sm_client,secret_name):
     try:
-        response=sm_client.describe_secret(SecretId=secret_name)
-        return True
+        response=sm_client.list_secrets(MaxResults=100)
+        # print(f"==>> response: {response['SecretList']}")
+        exist=False
+        for resp in response['SecretList']:
+            if secret_name==resp['Name']:
+                exist=True
+                return exist
+        return exist
+            
     except ClientError as e:
-        return False
+            print(e)
+
+
 
 
 def store_secret(table_name,last_updated):
@@ -87,26 +96,29 @@ def lambda_handler(event, context):
     table_names = conn.run("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name NOT LIKE '%prisma%';")
     
     for table in table_names:
+        exist=existing_secret(secret_manager_client,table[0])
+        if exist:
+            response = secret_manager_client.get_secret_value(SecretId=table[0])
+            last_updated = response['SecretString']
+            
         
-        response = secret_manager_client.get_secret_value(SecretId=table[0])
-        last_updated = response['SecretString']
+            last_updated_obj = datetime.strptime(last_updated, '%Y-%m-%d %H:%M:%S.%f')
+            
+            
+            last_updated_str = last_updated_obj.strftime('%Y-%m-%d %H:%M:%S.%f')
         
-       
-        last_updated_obj = datetime.strptime(last_updated, '%Y-%m-%d %H:%M:%S.%f')
-        
-        
-        last_updated_str = last_updated_obj.strftime('%Y-%m-%d %H:%M:%S.%f')
-    
-        
-        query = f"SELECT * FROM {table[0]} WHERE last_updated > '{last_updated_str}';"
-    
+            
+            query = f"SELECT * FROM {table[0]} WHERE last_updated > '{last_updated_str}';"
 
-        
+        else:
+            query = f"SELECT * FROM {table[0]}"
+
+    
         data = conn.run(query)
-        # print(f"New Data: {data}")
+        # print(f"New Data : {data}")
 
         if data:
-            print("Adding New Data")
+            print(f"Adding New Data in {table[0]}")
             formatted_data = format_to_parquet(data, conn, table[0])
             parquet_buffer = write_table_to_parquet_buffer(formatted_data)
             timestamp = table[0]+" "+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
@@ -120,6 +132,8 @@ def lambda_handler(event, context):
                 s3_client.put_object(Bucket='hamza-test-bucket', Key=s3_key, Body=parquet_buffer)
             except ClientError as e:
                 print(e)
+        else:
+            print(f"No New data to add in {table[0]}")
     
     close_db(conn)
 
