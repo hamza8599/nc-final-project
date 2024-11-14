@@ -33,7 +33,7 @@ resource "aws_iam_policy" "s3_lambda_policy" {
           "s3:PutObject"
         ]
         Effect   = "Allow"
-        Resource = [aws_s3_bucket.ingestion_bucket.arn, aws_s3_bucket.processed_bucket.arn]
+        Resource = [aws_s3_bucket.ingestion_bucket.arn, aws_s3_bucket.processed_bucket.arn, aws_s3_bucket.lambda_code.arn]
       },
     ]
   })
@@ -98,7 +98,8 @@ resource "aws_iam_policy" "secrets_manager_policy" {
                 "secretsmanager:GetResourcePolicy",
                 "secretsmanager:GetSecretValue",
                 "secretsmanager:DescribeSecret",
-                "secretsmanager:ListSecretVersionIds"
+                "secretsmanager:ListSecretVersionIds",
+                "secretsmanager:CreateSecret"
             ],
             "Resource": "*"
         },

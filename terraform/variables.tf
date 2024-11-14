@@ -20,5 +20,5 @@ variable "lambda_ingestion" {
 
 variable "python_runtime" {
   type    = string
-  default = "python3.12"
+  default = "python3.9"
 }
