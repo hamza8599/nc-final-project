@@ -8,17 +8,17 @@ resource "aws_sns_topic_subscription" "email-target" {
   endpoint  = "rz.dhothar@gmail.com" #TODO set up generic email address
 }
 
-resource "aws_cloudwatch_log_metric_filter" "error_filter" {
-  name           = "ingestion-error-filter"
-  pattern        = "Event recieved" #TODO update with final lambda logging message
-  log_group_name = "/aws/lambda/${var.lambda_ingestion}"
+# resource "aws_cloudwatch_log_metric_filter" "error_filter" {
+#   name           = "ingestion-error-filter"
+#   pattern        = "Event recieved" #TODO update with final lambda logging message
+#   log_group_name = "/aws/lambda/${var.lambda_ingestion}"
 
-  metric_transformation {
-    name      = "ErrorCount"
-    namespace = "Lambda/test"
-    value     = "1"
-  }
-}
+#   metric_transformation {
+#     name      = "ErrorCount"
+#     namespace = "Lambda/test"
+#     value     = "1"
+#   }
+# }
 
 
 resource "aws_cloudwatch_metric_alarm" "ingestion_sns_alarm" {

@@ -87,37 +87,37 @@ resource "aws_iam_role_policy_attachment" "lambda_sns_policy_attachment" {
   policy_arn = aws_iam_policy.lambda_sns_policy.arn
 }
 
-resource "aws_iam_policy" "secrets_manager_policy" {
-  name = "${var.lambda_ingestion}-lambda-sm-policy"
-  policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "secretsmanager:GetResourcePolicy",
-                "secretsmanager:GetSecretValue",
-                "secretsmanager:DescribeSecret",
-                "secretsmanager:ListSecretVersionIds"
-            ],
-            "Resource": [
-                aws_secretsmanager_secret.secrets_manager.arn
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "secretsmanager:ListSecrets",
-            "Resource": "*"
-        }
-    ]
-})
-}
+# resource "aws_iam_policy" "secrets_manager_policy" {
+#   name = "${var.lambda_ingestion}-lambda-sm-policy"
+#   policy = jsonencode({
+#     "Version": "2012-10-17",
+#     "Statement": [
+#         {
+#             "Effect": "Allow",
+#             "Action": [
+#                 "secretsmanager:GetResourcePolicy",
+#                 "secretsmanager:GetSecretValue",
+#                 "secretsmanager:DescribeSecret",
+#                 "secretsmanager:ListSecretVersionIds"
+#             ],
+#             "Resource": [
+#                 aws_secretsmanager_secret.secrets_manager.arn
+#             ]
+#         },
+#         {
+#             "Effect": "Allow",
+#             "Action": "secretsmanager:ListSecrets",
+#             "Resource": "*"
+#         }
+#     ]
+# })
+# }
 
-resource "aws_secretsmanager_secret" "secrets_manager" {
-  name = "ingestion-secrets-manager2"
-}
+# resource "aws_secretsmanager_secret" "secrets_manager" {
+#   name = "ingestion-secrets-manager2"
+# }
 
-resource "aws_iam_role_policy_attachment" "lambda_sm_policy_attachment" {
-  role = aws_iam_role.lambda_executive_role.id
-  policy_arn = aws_iam_policy.secrets_manager_policy.arn
-}
+# resource "aws_iam_role_policy_attachment" "lambda_sm_policy_attachment" {
+#   role = aws_iam_role.lambda_executive_role.id
+#   policy_arn = aws_iam_policy.secrets_manager_policy.arn
+# }

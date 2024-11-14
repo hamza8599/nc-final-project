@@ -3,17 +3,17 @@ variable "region" {
 }
 
 variable "ingestion_bucket" {
-    default = "dimensional-transformers-ingestion-bucket"
+    default = "dimensional-transformers-ingestion-bucket-1"
 }
 
 variable "processed_bucket" {
-  default = "dimensional-transformers-process-bucket"
+  default = "dimensional-transformers-process-bucket-1"
 }
 
 variable "lambda_bucket" {
-    default = "dimensional-transformers-lambda-bucket"
+    default = "dimensional-transformers-lambda-bucket-1"
 }
 
 variable "lambda_ingestion" {
-  default = "lambda-ingestion-handler"
+  default = "lambda-ingestion-handler-1"
 }
