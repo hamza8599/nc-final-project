@@ -5,12 +5,12 @@ resource "aws_sns_topic" "ingestion-topic" {
 resource "aws_sns_topic_subscription" "email-target" {
   topic_arn = aws_sns_topic.ingestion-topic.arn
   protocol  = "email"
-  endpoint  = "rz.dhothar@gmail.com" #TODO set up generic email address
+  endpoint  = "dimensionaltransformers1@gmail.com" 
 }
 
 resource "aws_cloudwatch_log_metric_filter" "error_filter" {
   name           = "ingestion-error-filter"
-  pattern        = "Unexpected Exception" #TODO update with final lambda logging message
+  pattern        = "Alert" #TODO update with final lambda logging message
   log_group_name = "/aws/lambda/${var.lambda_ingestion}"
 
   metric_transformation {

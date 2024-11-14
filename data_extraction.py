@@ -47,6 +47,7 @@ def existing_secret(sm_client,secret_name):
         for resp in response['SecretList']:
             if secret_name==resp['Name']:
                 exist=True
+                logger.info(f"Secret updated value {'exists' if exist else 'does not exist'}: {secret_name}") 
                 return exist
         return exist
             
@@ -63,7 +64,7 @@ def store_secret(table_name,last_updated):
                     SecretString=str(last_updated),  
                 )
         except ClientError as e:
-            print(e)
+            logger.info("Secret Create Error")
      else:
          try:
             response=secrets_manager_client.put_secret_value(
@@ -71,7 +72,7 @@ def store_secret(table_name,last_updated):
                 SecretString=str(last_updated) 
                 )
          except ClientError as e:
-             print(e)
+             logger.info("Secret Put Value Error")
 
 def format_to_parquet(data, conn, table_name):
     columns = [col["name"] for col in conn.columns]
@@ -122,15 +123,14 @@ def lambda_handler(event, context):
                 last_updated_str = last_updated_obj.strftime('%Y-%m-%d %H:%M:%S.%f')
             
                 query = f"SELECT * FROM {table[0]} WHERE last_updated > '{last_updated_str}';"
-
+                logger.info(f"Checking for New Data from {table[0]}")
             else:
                 query = f"SELECT * FROM {table[0]};"
+                logger.info(f"Checking for Data from {table[0]}")
 
             data = conn.run(query)
-            # print(f"New Data : {data}")
      
             if data:
-                print(f"Adding New Data in {table[0]}")
                 logger.info(f"Adding New Data in {table[0]}")
                 formatted_data = format_to_parquet(data, conn, table[0])
                 parquet_buffer = write_table_to_parquet_buffer(formatted_data)
@@ -145,16 +145,16 @@ def lambda_handler(event, context):
                 
                 try:
                     s3_client.put_object(Bucket="dimensional-transformers-ingestion-bucket", Key=s3_key, Body=parquet_buffer)
+                    logger.info(f"Putting New Data in s3 bucket for {table[0]}")
                 except ClientError as e:
-                    logger.info(f"expected Exception: {str(e)}")
-                    print(e)
+                    logger.info(f"Alert: Failed to write to s3: {str(e)}")
+                   
             else:
-                print(f"No New data to add in {table[0]}")
                 logger.info(f"No New data to add in {table[0]}")
         
         close_db(conn)
     except Exception as e:
-        logger.info(f"Unexpected Exception: {str(e)}")
+        logger.info(f"Alert: Failed to connect to DB: {str(e)}")
 
 # lambda_handler("s","s")
 # resting secrets
