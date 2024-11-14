@@ -1,4 +1,4 @@
-from DB.data_extraction import data_extract,connect_db,close_db
+from data_extraction import data_extract,connect_db,close_db
 # from DB.data_extraction import connect_db,close_db
 import pytest
 

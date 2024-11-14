@@ -125,7 +125,7 @@ def lambda_handler(event, context):
     
                 
                 try:
-                    s3_client.put_object(Bucket="team1-dimensional-transformers-ingestion-bucket", Key=s3_key, Body=parquet_buffer)
+                    s3_client.put_object(Bucket="team10-dimensional-transformers-ingestion-bucket", Key=s3_key, Body=parquet_buffer)
                 except ClientError as e:
                     logger.info(f"expected Exception: {str(e)}")
                     print(e)

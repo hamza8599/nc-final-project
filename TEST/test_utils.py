@@ -1,6 +1,6 @@
-from DB.data_extraction import data_extract
-from DB.data_extraction import format_to_parquet
-from DB.data_extraction import connect_db,close_db
+from data_extraction import data_extract
+from data_extraction import format_to_parquet
+from data_extraction import connect_db,close_db
 import pyarrow
 
 def test_format_to_parquet_returns_formated_data():
