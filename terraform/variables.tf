@@ -3,15 +3,15 @@ variable "region" {
 }
 
 variable "ingestion_bucket" {
-    default = "dimensional-transformers-ingestion-bucket"
+    default = "team-12-dimensional-transformers-ingestion-bucket"
 }
 
 variable "processed_bucket" {
-  default = "dimensional-transformers-process-bucket"
+  default = "team-12-dimensional-transformers-process-bucket"
 }
 
 variable "lambda_bucket" {
-    default = "dimensional-transformers-lambda-bucket"
+    default = "team-12-dimensional-transformers-lambda-bucket"
 }
 
 variable "lambda_ingestion" {
