@@ -27,7 +27,7 @@ resource "aws_cloudwatch_metric_alarm" "ingestion_sns_alarm" {
   evaluation_periods  = 1
   metric_name         = "ErrorCount"
   namespace           = "Lambda/test"
-  period              = 120 #TODO depends on eventbridge timer
+  period              = 300 #TODO depends on eventbridge timer
   statistic           = "Sum"
   threshold           = 1
   alarm_description   = "Alert! ingestion phase needs your attention" 
