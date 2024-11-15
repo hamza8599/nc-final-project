@@ -10,7 +10,7 @@ resource "aws_sns_topic_subscription" "email-target" {
 
 resource "aws_cloudwatch_log_metric_filter" "error_filter" {
   name           = "ingestion-error-filter"
-  pattern        = "Alert" #TODO update with final lambda logging message
+  pattern        = "Alert"
   log_group_name = "/aws/lambda/${var.lambda_ingestion}"
 
   metric_transformation {
@@ -30,7 +30,7 @@ resource "aws_cloudwatch_metric_alarm" "ingestion_sns_alarm" {
   period              = 120 #TODO depends on eventbridge timer
   statistic           = "Sum"
   threshold           = 1
-  alarm_description   = "We Failed to connect" #TODO update to relevant alarm message
+  alarm_description   = "Alert! ingestion phase needs your attention" 
   actions_enabled     = "true"
   alarm_actions       = [aws_sns_topic.ingestion-topic.arn]
   ok_actions          = [aws_sns_topic.ingestion-topic.arn]

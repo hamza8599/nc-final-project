@@ -3,7 +3,7 @@
 resource "aws_lambda_function" "lambda_ingestion_func" {
   function_name = var.lambda_ingestion
   role          = aws_iam_role.lambda_executive_role.arn
-  handler       = "data_extraction.lambda_handler"  #TODO - name of final lambda func
+  handler       = "data_extraction.lambda_handler"  
   runtime       = var.python_runtime
   timeout = 600
   s3_bucket = aws_s3_bucket.lambda_code.id

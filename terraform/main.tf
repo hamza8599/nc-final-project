@@ -5,9 +5,13 @@ terraform {
         version = "~>5.0"
     }
   }
+   backend "s3" {
+    bucket = "dimensional-transformers-state-bucket"
+    key = "transformers-state/terraform.tfstate"
+    region = "eu-west-2"
+  }
 }
 
-# TODO add backend for tf state bucket
 
 provider "aws" {
   region = var.region
