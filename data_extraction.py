@@ -146,7 +146,7 @@ def lambda_handler(event, context):
     
                 
                 try:
-                    s3_client.put_object(Bucket="dimensional-transformers-ingestion-bucket", Key=s3_key, Body=parquet_buffer)
+                    s3_client.put_object(Bucket="team-12-dimensional-transformers-ingestion-bucket", Key=s3_key, Body=parquet_buffer)
                     logger.info(f"Putting New Data in s3 bucket for {table[0]}")
                 except ClientError as e:
                     logger.info(f"Alert: Failed to write to s3: {str(e)}")
