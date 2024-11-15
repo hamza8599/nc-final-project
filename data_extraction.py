@@ -54,12 +54,12 @@ def existing_secret(sm_client,secret_name):
     except ClientError as e:
             print(e)
 
-def store_secret(table_name,last_updated):
-     secrets_manager_client = boto3.client('secretsmanager')
+def store_secret(table_name,last_updated,secrets_manager_client):
+    #  secrets_manager_client = boto3.client('secretsmanager')
      secret_exist=existing_secret(secrets_manager_client,table_name)
      if not secret_exist:
         try:
-            response = secrets_manager_client.create_secret(
+             secrets_manager_client.create_secret(
                     Name=table_name,  
                     SecretString=str(last_updated),  
                 )
@@ -67,7 +67,7 @@ def store_secret(table_name,last_updated):
             logger.info("Secret Create Error")
      else:
          try:
-            response=secrets_manager_client.put_secret_value(
+              secrets_manager_client.put_secret_value(
                 SecretId=table_name,
                 SecretString=str(last_updated) 
                 )
@@ -78,7 +78,8 @@ def format_to_parquet(data, conn, table_name):
     columns = [col["name"] for col in conn.columns]
     df = pd.DataFrame(data, columns=columns)
     last_updated = df['last_updated'].max()
-    store_secret(table_name,last_updated)
+    secrets_manager_client = boto3.client('secretsmanager')
+    store_secret(table_name,last_updated,secrets_manager_client)
     table = pa.Table.from_pandas(df)
     return table
 
@@ -88,8 +89,8 @@ def write_table_to_parquet_buffer(pyarrow_table):
     parquet_buffer.seek(0)
     return parquet_buffer
 
-def get_created_date(data,conn):
-     columns = [col["name"] for col in conn.columns]
+def get_created_date(data,columns):
+    #  columns = [col["name"] for col in conn.columns]
      df = pd.DataFrame(data, columns=columns)
      created_at = df['created_at'].max()
      return created_at
@@ -136,7 +137,8 @@ def lambda_handler(event, context):
                 parquet_buffer = write_table_to_parquet_buffer(formatted_data)
 
                 timestamp = table[0]+" "+datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-                created_at=get_created_date(data,conn)
+                columns = [col["name"] for col in conn.columns]
+                created_at=get_created_date(data,columns)
                 year=created_at.year
                 month=created_at.strftime('%B')
                 day=created_at.day
