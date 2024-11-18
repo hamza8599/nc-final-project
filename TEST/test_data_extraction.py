@@ -175,11 +175,8 @@ class DummyContext:
 
 @mock_aws
 @patch("data_extraction.connect_db")
-def test_lambda_handler_end_to_end(mock_pg_connection, caplog):
+def test_lambda_handler_end_to_end(mock_pg_connection, caplog, sm_client, s3_client):
 
-    # Mock AWS services
-    s3_client = boto3.client("s3", region_name="eu-west-2")
-    sm_client = boto3.client("secretsmanager", region_name="eu-west-2")
     s3_client.create_bucket(
         Bucket="team-12-dimensional-transformers-ingestion-bucket",
         CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
