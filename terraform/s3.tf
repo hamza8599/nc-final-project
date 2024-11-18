@@ -16,3 +16,8 @@ resource "aws_s3_object" "lambda_code" {
   source = "${path.module}/../ingestion-lambda.zip"
 }
 
+resource "aws_s3_object" "process-lambda-code" {
+  bucket = aws_s3_bucket.lambda_code.id
+  key = "process-lambda.zip"
+  source = "${path.module}/../process-lambda.zip"
+}
