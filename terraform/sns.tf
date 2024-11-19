@@ -8,7 +8,7 @@ resource "aws_sns_topic_subscription" "email-target" {
   endpoint  = "dimensionaltransformers1@gmail.com" 
 }
 
-resource "aws_cloudwatch_log_metric_filter" "error_filter" {
+resource "aws_cloudwatch_log_metric_filter" "inseryion-error_filter" {
   name           = "ingestion-error-filter"
   pattern        = "Alert"
   log_group_name = "/aws/lambda/${var.lambda_ingestion}"
@@ -45,12 +45,12 @@ resource "aws_sns_topic" "process-topic" {
   }
 
 resource "aws_sns_topic_subscription" "email-target-for-process" {
-  topic_arn = aws_sns_topic.process-topic
+  topic_arn = aws_sns_topic.process-topic.arn
   protocol  = "email"
   endpoint  = "dimensionaltransformers1@gmail.com" 
 }
 
-resource "aws_cloudwatch_log_metric_filter" "error_filter" {
+resource "aws_cloudwatch_log_metric_filter" "process-error_filter" {
   name           = "process-error-filter"
   pattern        = "Alert"
   log_group_name = "/aws/lambda/${var.lambda_process}"
