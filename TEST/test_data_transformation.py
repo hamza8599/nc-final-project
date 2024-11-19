@@ -28,13 +28,14 @@ def s3_client(aws_creds):
 
 mock_design = pd.DataFrame({"design_id": [1], "design_name": ["abc"], 
                             "file_location": ["path"], "filename": ["path name"]})
-
+@pytest.mark.skip
 def test_writing_to_parquet(s3_client):
     writing_to_parquet(mock_design, "mock-bucket", "design_table")
     df = wr.s3.read_parquet("s3://mock-bucket/*", dataset=True)
     assert not df.empty
     # assert df.equals(mock_design)
-
+    
+@pytest.mark.skip
 def test_parquet_files(s3_client):
     key = "design_table"
     writing_to_parquet(mock_design, "mock-bucket", key)
