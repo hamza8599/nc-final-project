@@ -8,7 +8,7 @@ resource "aws_sns_topic_subscription" "email-target" {
   endpoint  = "dimensionaltransformers1@gmail.com" 
 }
 
-resource "aws_cloudwatch_log_metric_filter" "inseryion-error_filter" {
+resource "aws_cloudwatch_log_metric_filter" "ingestion-error-filter" {
   name           = "ingestion-error-filter"
   pattern        = "Alert"
   log_group_name = "/aws/lambda/${var.lambda_ingestion}"
@@ -50,7 +50,7 @@ resource "aws_sns_topic_subscription" "email-target-for-process" {
   endpoint  = "dimensionaltransformers1@gmail.com" 
 }
 
-resource "aws_cloudwatch_log_metric_filter" "process-error_filter" {
+resource "aws_cloudwatch_log_metric_filter" "process-error-filter" {
   name           = "process-error-filter"
   pattern        = "Alert"
   log_group_name = "/aws/lambda/${var.lambda_process}"
