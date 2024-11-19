@@ -122,7 +122,8 @@ def lambda_handler(event, context):
                                FROM information_schema.tables
                                WHERE table_schema='public' 
                                AND table_type='BASE TABLE' 
-                               AND table_name NOT LIKE '%prisma%';
+                               AND table_name NOT LIKE '%prisma%'
+                               ORDER BY table_name ASC;
                                """
         )
         for table in table_names:
