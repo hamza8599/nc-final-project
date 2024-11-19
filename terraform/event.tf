@@ -17,3 +17,21 @@ resource "aws_lambda_permission" "allow_cloudwatch_events" {
     source_arn = aws_cloudwatch_event_rule.scheduler.arn
 
 }
+
+resource "aws_s3_bucket_notification" "s3_trigger_lambda_notification" {
+  bucket = aws_s3_bucket.ingestion_bucket.id
+  depends_on = [ aws_lambda_permission.allow_s3_to_invoke_lambda ]
+
+  lambda_function {
+    events = ["s3:ObjectCreated:*"]  # Trigger on all object creation events
+    lambda_function_arn = aws_lambda_function.lambda_process_func.arn
+  }
+}
+
+resource "aws_lambda_permission" "allow_s3_to_invoke_lambda" {
+  action = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_process_func.function_name
+  principal = "s3.amazonaws.com"
+  source_arn = aws_s3_bucket.ingestion_bucket.arn
+  # source_account = data.aws_caller_identity.current.account_id
+}

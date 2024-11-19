@@ -1,8 +1,4 @@
-def sales_order(xyz):
-    print(f"i'm working on {xyz}")
+s3_object_name = "sales/12/15/10/sales-12350"
+tablename = s3_object_name.split('/', 5)[0]
 
-filename = "sales_order"
-abc= "something"
-func_name = f"{filename}(abc)"
-eval(func_name)
-    
+print(tablename)

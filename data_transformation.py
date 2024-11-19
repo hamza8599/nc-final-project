@@ -34,12 +34,15 @@ logger.setLevel(logging.INFO)
 # )
 """
 s3 = boto3.client('s3')
-ingestion_bucket = "team-12-dimensional-transformers-ingestion-bucket"   
+ingestion_bucket = "team-500-dimensional-transformers-ingestion-bucket"   
 
-def design(object_name):
-    design_df = wr.s3.read_parquet(f"s3://{ingestion_bucket}/design/*/*/*/{object_name}", dataset=True)
-    design_df = design_df.drop(columns=['created_at', 'last_updated'])
-    return design_df
+def design(name, datestamp):
+    try:
+        design_df = wr.s3.read_parquet(f"s3://{ingestion_bucket}/design/*/*/*/{name} {datestamp}", dataset=True)
+        design_df = design_df.drop(columns=['created_at', 'last_updated'])
+        return design_df
+    except ClientError as e:
+        logger.info(f"Alert: Failed in design function: {str(e)}")
 
 def currency(object_name):
     currency_df = wr.s3.read_parquet(f"s3://{ingestion_bucket}/currency/*/*/*/{object_name}", dataset=True)
@@ -104,14 +107,16 @@ def date():
 
 
 
-def sales_order(object_name):
-    sales_order_df = wr.s3.read_parquet(f"s3://{ingestion_bucket}/sales_order/*/*/*/{object_name}", dataset=True)
-    sales_order_df["created_date"] = pd.to_datetime(sales_order_df["created_at"]).dt.date
-    sales_order_df["created_time"] = pd.to_datetime(sales_order_df["created_at"]).dt.time
-    sales_order_df["updated_date"] = pd.to_datetime(sales_order_df["last_updated"]).dt.date
-    sales_order_df["updated_time"] = pd.to_datetime(sales_order_df["last_updated"]).dt.time
-    return sales_order_df.drop(columns=["created_at", "last_updated"])
-
+def sales_order(name, datestamp):
+    try:
+        sales_order_df = wr.s3.read_parquet(f"s3://{ingestion_bucket}/sales_order/*/*/*/{name} {datestamp}", dataset=True)
+        sales_order_df["created_date"] = pd.to_datetime(sales_order_df["created_at"]).dt.date
+        sales_order_df["created_time"] = pd.to_datetime(sales_order_df["created_at"]).dt.time
+        sales_order_df["updated_date"] = pd.to_datetime(sales_order_df["last_updated"]).dt.date
+        sales_order_df["updated_time"] = pd.to_datetime(sales_order_df["last_updated"]).dt.time
+        return sales_order_df.drop(columns=["created_at", "last_updated"])
+    except ClientError as e:
+        logger.info(f"Alert: Failed in sales_order function: {str(e)}")
 """
 # if __name__ == "__main__":
 #     dim_design = create_dim_design()
@@ -148,29 +153,33 @@ def lambda_handler(event, context):
     logger.info(f"Bucket is {s3_bucket_name}")
     logger.info(f"Object key is {s3_object_name}")
     
-    filename, format = s3_object_name.split(' ') 
-    if s3_object_name[-7:] != "parquet":
-            raise InvalidFileTypeError
+    tablename= s3_object_name.split('/', 5)[0]
+    filename = s3_object_name.split('/', 5)[4]
+    name, datestamp = filename.split('+')
+    # if s3_object_name[-7:] != "parquet":
+    #         raise InvalidFileTypeError
     valid_objects = ["sales_order", "design", "currency", "counterparty", "staff", "location"]
 
-    if filename not in valid_objects:
-        logger.info(f"Pass: no actions required for {filename}")
+    if tablename not in valid_objects:
+        logger.info(f"Pass: no actions required for {tablename}")
         logger.info(json.dumps(event, indent=2))
         return {
         'statusCode': 200,
-        'body': json.dumps(f'{filename} processed successfully')
+        'body': json.dumps(f'{tablename} processed successfully')
         }
     
-    logger.info(f'working on {filename}')
-    
-    func_name = f"{filename}(s3_object_name)"
-    updated_df = eval(func_name)
-    wr.s3.to_parquet(
-    df=updated_df,
-    path=f's3://team-12-dimensional-transformers-process-bucket/{filename}/',
-    #mode="overwrite",
-    dataset=True
-    )
-    logger.info(f"{filename} updated on prcoess bucket")
+    logger.info(f'working on {tablename}')
+    try:
+        func_name = f"{tablename}(name, datestamp)"
+        updated_df = eval(func_name)
+        wr.s3.to_parquet(
+        df=updated_df,
+        path=f's3://team-12-dimensional-transformers-process-bucket/{tablename}/',
+        #mode="overwrite",
+        dataset=True
+        )
+    except ClientError as e:
+        logger.info(f"Alert: Failed to call the function: {str(e)}")
+    logger.info(f"{tablename} updated on prcoess bucket")
 
 

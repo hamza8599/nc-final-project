@@ -159,7 +159,7 @@ def lambda_handler(event, context):
                 s3_key = f"{table[0]}/{year}/{month}/{day}/{timestamp}"
                 try:
                     s3_client.put_object(
-                        Bucket="team-12-dimensional-transformers-ingestion-bucket",
+                        Bucket="team-500-dimensional-transformers-ingestion-bucket",
                         Key=s3_key,
                         Body=parquet_buffer,
                     )
