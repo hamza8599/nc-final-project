@@ -2,12 +2,16 @@ import pandas as pd
 import boto3
 import awswrangler as wr
 from datetime import datetime
+import logging
 
-other_data = "table_name = ""
-"""get bucket name and object name from event"""
-# s3_bucket_name, s3_object_name = get_object_path(event["Records"])
-# logger.info(f"Bucket is {s3_bucket_name}")
-# logger.info(f"Object key is {s3_object_name}")"
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# other_data = "table_name = ""
+# """get bucket name and object name from event"""
+# # s3_bucket_name, s3_object_name = get_object_path(event["Records"])
+# # logger.info(f"Bucket is {s3_bucket_name}")
+# # logger.info(f"Object key is {s3_object_name}")"
 
 
 s3 = boto3.client('s3')
@@ -28,6 +32,8 @@ def writing_to_parquet(df, bucket, key):
     # mode="overwrite",
     # dataset=True
 )
+    
+
 def create_dim_design():
     design_df = read_parquet_files(f"s3://{ingested_bucket_name}/design/*", dataset=True)
     design_df = design_df.drop(columns=['created_at', 'last_updated'])
@@ -43,7 +49,7 @@ def create_dim_currency():
 
 def create_dim_staff():
     staff_df = wr.s3.read_parquet(f"s3://{ingested_bucket_name}/staff/*", dataset=True)
-    department_df = wr.s3.read_parquet(f's3://{ingested_bucket_name}/deparment/*', dateset=True)
+    department_df = wr.s3.read_parquet(f's3://{ingested_bucket_name}/department/*', dateset=True)
     departmental_staff = pd.merge(staff_df, department_df, on="department_id")
     return departmental_staff[["staff_id", "first_name", "last_name", "department_name", "location", "email_address"]]
 
@@ -126,11 +132,9 @@ if __name__ == "__main__":
     writing_to_parquet(fact_sales_order, processed_bucket_name, "fact_sales_order/fact_sales_order.parquet")
 
 
-"""Create fact_sales_order"""
 
-# """checks for existing data processed bucket"""
-# try:
-#     existing_df = wr.s3.read_parquet("s3://dorota-test-team10-dimensional-transformers-process-bucket/design/dim_design", dataset=True)
-#     combined = existing_df.merge(new_design_df, on='design_id')
-# except wr.exceptions.NoFilesFound:
-#     combined = new_design_df
+    def lambda_handler(event, context):
+        pass
+
+
+
