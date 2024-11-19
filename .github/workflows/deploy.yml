@@ -40,13 +40,13 @@ jobs:
           with:
             python-version: '3.12'
         - name: Reset Secrets
-          run: python reset-secrets.py
+          run: python reset_secrets.py
 
     deploy-lambda:
       name: deploy-lambda
       runs-on: ubuntu-latest
       environment: development
-      needs: run-tests
+      needs: reset-secrets
       steps:
         - name: Checkout
           uses: actions/checkout@v4
