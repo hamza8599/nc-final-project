@@ -13,23 +13,6 @@ table_name = ""
 # logger.info(f"Bucket is {s3_bucket_name}")
 # logger.info(f"Object key is {s3_object_name}")
 
-"""Read Parquet from ingestion bucket"""
-df = wr.s3.read_parquet(f"s3://{ingestion_bucket_name}/{table_name}/*", dataset=True)
-
-"""checks for existing data processed bucket"""
-# try:
-#     existing_df = df
-#     combined = existing_df.merge(new_design_df, on='design_id')
-# except wr.exceptions.NoFilesFound:
-#     combined = new_design_df
-
-"""Write processed data to process bucket"""
-wr.s3.to_parquet(
-    df=df,
-    path=f's3://{process_bucket_name}/{table_name}/{table_name}.parquet'
-    # mode="overwrite",
-    # dataset=True
-)
 
 """Create dim_design"""
 design_df = df.drop(columns=['created_at', 'last_updated'])
