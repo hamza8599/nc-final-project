@@ -22,20 +22,22 @@ to_not_delete = "s3://dorota-test-team10-dimensional-transformers-process-bucket
 
 #reads the specific bucket & key from the body"
 def read_parquet_files(bucket, key):
-    object = s3.get_object(bucket, key)
-    return pd.read_parquet(object["body"])
+    #object = s3.get_object(Bucket=bucket, Key=key)
+    #return pd.read_parquet(object["body"])
+    df = wr.s3.read_parquet(f"s3://{bucket}/{key}/*", dataset=True)
+    return df
 
 def writing_to_parquet(df, bucket, key):
     wr.s3.to_parquet(
     df=df,
-    path=f's3://{bucket}/{key}'
-    # mode="overwrite",
-    # dataset=True
+    path=f's3://{bucket}/{key}/',
+    #mode="overwrite",
+    dataset=True
 )
     
 
 def create_dim_design():
-    design_df = read_parquet_files(f"s3://{ingested_bucket_name}/design/*", dataset=True)
+    design_df = read_parquet_files("")
     design_df = design_df.drop(columns=['created_at', 'last_updated'])
     return design_df[["design_id", "design_name", "file_location", "filename"]]
 
@@ -131,10 +133,18 @@ if __name__ == "__main__":
     writing_to_parquet(dim_date, processed_bucket_name, "dim_date/dim_date.parquet")
     writing_to_parquet(fact_sales_order, processed_bucket_name, "fact_sales_order/fact_sales_order.parquet")
 
+def get_object_path(records):
+    """Extracts bucket and object references from Records field of event."""
+    return records[0]["s3"]["bucket"]["name"], records[0]["s3"]["object"]["key"]
 
 
-    def lambda_handler(event, context):
-        pass
+def lambda_handler(event, context):
+    """get bucket name and object name from event"""
+    s3_bucket_name, s3_object_name = get_object_path(event["Records"])
+    logger.info(f"Bucket is {s3_bucket_name}")
+    logger.info(f"Object key is {s3_object_name}")
+    if s3_object_name[-7:] != "parquet":
+            raise InvalidFileTypeError
 
 
 
