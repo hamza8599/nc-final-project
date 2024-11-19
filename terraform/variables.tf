@@ -15,7 +15,7 @@ variable "lambda_bucket" {
 }
 
 variable "lambda_ingestion" {
-  default = "lambda-ingestion-handler"
+  default = "lambda-ingestion-handler-1"
 }
 
 variable "python_runtime" {
