@@ -6,7 +6,7 @@ terraform {
     }
   }
    backend "s3" {
-    bucket = "rohail-dimensional-transformers-state-bucket"
+    bucket = "hamza-dimensional-transformers-state-bucket"
     key = "transformers-state/terraform.tfstate"
     region = "eu-west-2"
   }
