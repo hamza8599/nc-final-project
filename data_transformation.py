@@ -7,9 +7,9 @@ from botocore.exceptions import ClientError
 import json
 import os
 
-INGESTION_BUCKET = os.getenv('INGESTION_BUCKET', 'default-ingestion-bucket')
-PROCESSED_BUCKET = os.getenv('PROCESSED_BUCKET', 'default-processed-bucket')
-LAMBDA_BUCKET = os.getenv('LAMBDA_BUCKET', 'default-lambda-bucket')
+INGESTION_BUCKET = os.getenv('INGESTION_BUCKET', 'dwh-default-ingestion-bucket')
+PROCESSED_BUCKET = os.getenv('PROCESSED_BUCKET', 'dwh-default-processed-bucket')
+LAMBDA_BUCKET = os.getenv('LAMBDA_BUCKET', 'dwh-default-lambda-bucket')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -37,7 +37,7 @@ def currency(name, datestamp):
 
 def staff(name, datestamp):
     try:
-        staff_df = wr.s3.read_parquet(f"s3://{INGESTION_BUCKET}/staff/*/*/*/{name} {datestamp}", dataset=True)
+        staff_df = wr.s3.read_parquet(f"s3://{INGESTION_BUCKET}/staff/*/*/*/{name} {datestamp}")
         department_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/department/*', dateset=True)
         departmental_staff = pd.merge(staff_df, department_df, on="department_id")
         return departmental_staff[["staff_id", "first_name", "last_name", "department_name", "location", "email_address"]]
@@ -47,7 +47,7 @@ def staff(name, datestamp):
 
 def counterparty(name, datestamp):
     try:
-        address_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/address/*', dataset=True)
+        address_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/address/*')
         cp_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/cp/*/*/*/{name} {datestamp}', dataset=True)
         dim_counterparty_df = pd.merge(cp_df, address_df, left_on="legal_address_id", right_on="address_id", how="inner")
         return dim_counterparty_df[["counterparty_id",
@@ -74,7 +74,7 @@ def counterparty(name, datestamp):
 def location(name, datestamp):
     try:
         sales_order_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/location/*/*/*/{name} {datestamp}', dataset=True)
-        address_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/address/*', dataset=True)
+        address_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/address/*')
         dims_location_df = pd.merge(sales_order_df, address_df, left_on="agreed_delivery_location_id", right_on="address_id", how="inner")
         return dims_location_df[["agreed_delivery_location_id", "address_line_1", "address_line_2", "district", "city", "postal_code", "country", "phone"]].rename(columns={"agreed_delivery_location_id": "location_id"})
     except ClientError as e:
