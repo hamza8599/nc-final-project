@@ -35,7 +35,7 @@ resource "aws_iam_policy" "s3_lambda_policy" {
         ]
         Effect   = "Allow"
         
-        Resource = ["${aws_s3_bucket.ingestion_bucket.arn}/*", "${aws_s3_bucket.processed_bucket.arn}/*", "${aws_s3_bucket.lambda_code.arn}/*"]
+        Resource = [ "${aws_s3_bucket.ingestion_bucket.arn}", "${aws_s3_bucket.ingestion_bucket.arn}/*", "${aws_s3_bucket.processed_bucket.arn}", "${aws_s3_bucket.processed_bucket.arn}/*", "${aws_s3_bucket.lambda_code.arn}", "${aws_s3_bucket.lambda_code.arn}/*" ]
       },
     ]
   })

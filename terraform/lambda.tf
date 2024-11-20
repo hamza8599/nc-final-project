@@ -11,6 +11,13 @@ resource "aws_lambda_function" "lambda_ingestion_func" {
   layers = [
     "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python39:26"
   ]
+  environment {
+    variables = {
+      INGESTION_BUCKET = var.ingestion_bucket
+      PROCESSED_BUCKET = var.processed_bucket
+      LAMBDA_BUCKET    = var.lambda_bucket
+    }
+  }
 }
 
 
@@ -34,6 +41,13 @@ resource "aws_lambda_function" "lambda_process_func" {
   layers = [
     "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python39:26"
   ]
+  environment {
+    variables = {
+      INGESTION_BUCKET = var.ingestion_bucket
+      PROCESSED_BUCKET = var.processed_bucket
+      LAMBDA_BUCKET    = var.lambda_bucket
+    }
+  }
 }
 
 

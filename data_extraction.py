@@ -8,6 +8,11 @@ from pg8000.native import Connection
 import json
 from botocore.exceptions import ClientError
 import logging
+import os
+
+INGESTION_BUCKET = os.getenv('INGESTION_BUCKET', 'default-ingestion-bucket')
+PROCESSED_BUCKET = os.getenv('PROCESSED_BUCKET', 'default-processed-bucket')
+LAMBDA_BUCKET = os.getenv('LAMBDA_BUCKET', 'default-lambda-bucket')
 
 
 def connect_db(secret_name):
@@ -159,7 +164,7 @@ def lambda_handler(event, context):
                 s3_key = f"{table[0]}/{year}/{month}/{day}/{timestamp}"
                 try:
                     s3_client.put_object(
-                        Bucket="team-500-dimensional-transformers-ingestion-bucket",
+                        Bucket=INGESTION_BUCKET,
                         Key=s3_key,
                         Body=parquet_buffer,
                     )
