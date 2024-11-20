@@ -174,3 +174,4 @@ def lambda_handler(event, context):
     logger.info(f"{filename} updated on prcoess bucket")
 
 
+print(location())
