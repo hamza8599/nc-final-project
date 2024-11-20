@@ -35,9 +35,9 @@ def currency(name, datestamp):
     except ClientError as e:
         logger.info(f"Alert: Failed in currency function: {str(e)}")
 
-def staff(object_name):
+def staff(name, datestamp):
     try:
-        staff_df = wr.s3.read_parquet(f"s3://{INGESTION_BUCKET}/staff/*/*/*/{object_name}", dataset=True)
+        staff_df = wr.s3.read_parquet(f"s3://{INGESTION_BUCKET}/staff/*/*/*/{name} {datestamp}", dataset=True)
         department_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/department/*', dateset=True)
         departmental_staff = pd.merge(staff_df, department_df, on="department_id")
         return departmental_staff[["staff_id", "first_name", "last_name", "department_name", "location", "email_address"]]
@@ -45,10 +45,10 @@ def staff(object_name):
         logger.info(f"Alert: Failed in staff function: {str(e)}")
 
 
-def counterparty(object_name):
+def counterparty(name, datestamp):
     try:
         address_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/address/*', dataset=True)
-        cp_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/cp/*/*/*/{object_name}', dataset=True)
+        cp_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/cp/*/*/*/{name} {datestamp}', dataset=True)
         dim_counterparty_df = pd.merge(cp_df, address_df, left_on="legal_address_id", right_on="address_id", how="inner")
         return dim_counterparty_df[["counterparty_id",
         "counterparty_legal_name",
@@ -71,9 +71,9 @@ def counterparty(object_name):
     except ClientError as e:
         logger.info(f"Alert: Failed in counterparty function: {str(e)}")
 
-def location(object_name):
+def location(name, datestamp):
     try:
-        sales_order_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/location/*/*/*/{object_name}', dataset=True)
+        sales_order_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/location/*/*/*/{name} {datestamp}', dataset=True)
         address_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/address/*', dataset=True)
         dims_location_df = pd.merge(sales_order_df, address_df, left_on="agreed_delivery_location_id", right_on="address_id", how="inner")
         return dims_location_df[["agreed_delivery_location_id", "address_line_1", "address_line_2", "district", "city", "postal_code", "country", "phone"]].rename(columns={"agreed_delivery_location_id": "location_id"})
