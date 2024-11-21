@@ -1,12 +1,13 @@
 import pandas as pd
 import boto3
 import awswrangler as wr
-from datetime import datetime
+from datetime import datetime,timedelta
 import logging
 from botocore.exceptions import ClientError
 import json
 import os
 from awswrangler.exceptions import NoFilesFound
+
 
 INGESTION_BUCKET = os.getenv('INGESTION_BUCKET', 'default-ingestion-bucket')
 PROCESSED_BUCKET = os.getenv('PROCESSED_BUCKET', 'default-processed-bucket')
@@ -102,7 +103,7 @@ def dim_date():
             logger.info(f"Pass: no actions required for date")
             return
         else:
-            start_date = last_date
+            start_date = last_date+timedelta(days=1)
             update_dim_date(start_date)
     except NoFilesFound:
         start_date = datetime(2020, 1, 1)
