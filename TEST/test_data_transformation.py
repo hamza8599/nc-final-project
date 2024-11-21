@@ -1,6 +1,6 @@
 from data_transformation import INGESTION_BUCKET, PROCESSED_BUCKET, lambda_handler,  design, dim_date, update_dim_date, counterparty, currency, address, staff, sales_order, NoFilesFound
 from moto import mock_aws
-from unittest import mock 
+from unittest.mock import patch 
 import pandas as pd
 import boto3
 import awswrangler as wr
@@ -77,8 +77,8 @@ mock_sales_order = pd.DataFrame({
     "units_sold": [23, 2],
     "unit_price": [10, 5],
     "currency_id": [1, 2],
-    "agreed_delivery_date": ["2024-10-10", "2024-11-11"],
-    "agreed_payment_date": ["2024-10-10", "2024-11-11"],
+    "agreed_delivery_date": [datetime.now(), datetime.now()],
+    "agreed_payment_date": [datetime.now(), datetime.now()],
     "agreed_delivery_location_id": [1, 2]
 })
 
@@ -92,12 +92,12 @@ mock_department = pd.DataFrame({
 })
 
 mock_date = pd.DataFrame({
-    "date_id":[datetime(2024, 11, 22)],
+    "date_id":[datetime(2024, 11, 21)],
     "year": [2024],
     "month": [11],
-    "day": [22],
-    "day_of_week": [4],
-    "day_name": ["Wednesday"],
+    "day": [21],
+    "day_of_week": [3],
+    "day_name": ["Thursday"],
     "month_name": ["November"],
     "quarter": [4]
 })
@@ -198,7 +198,7 @@ def test_lambda_handler(s3_client):
             }
         }]
     }
-    with mock.patch("data_transformation.design") as mock_design_func:
+    with patch("data_transformation.design") as mock_design_func:
         response = lambda_handler(mock_event, {})
         mock_design_func.assert_called_once_with("design", "2024-11-20")
         assert response["statusCode"] == 200
@@ -221,19 +221,8 @@ def test_lambda_handler_no_action_required_for_invalid_tablename(s3_client):
     response = lambda_handler(mock_event_no_action, {})
     assert "Pass: no actions required" in response["body"]
 
-# mocked_now = datetime(2024, 11, 20)
-# @pytest.mark.parametrize("datetime_mocked", [mocked_now])
-# def test_dim_date(datetime_mocked):
-#     with mock.patch('data_transformation.datetime') as mock_datetime:                  #
-#         mock_datetime.now.return_value = datetime_mocked
-#         dim_date_df = dim_date()
-#         assert "date_id" in dim_date_df.columns
-#         assert "year" in dim_date_df.columns
-#         assert dim_date_df['year'].iloc[0] == 2024
-#         assert dim_date_df['month'].iloc[0] == 11
-#         assert dim_date_df['day'].iloc[0] == 20
 
-def test_update_dim_date():
+def test_update_dim_date_returns_correct_columns():
     mocked_date = datetime(2024, 11, 20)
     dim_date_df = update_dim_date(mocked_date)
     assert "date_id" in dim_date_df.columns
@@ -245,20 +234,40 @@ def test_update_dim_date():
     assert "month_name" in dim_date_df.columns
     assert "quarter" in dim_date_df.columns
 
-def test_dim_date_returns_no_actions_required_when_date_is_up2date():
-    wr.s3.to_parquet(df=mock_date, path=f's3://{PROCESSED_BUCKET}/date/*', dataset=False)
-    # with mock.patch('data_transformation.dim_date') as mock_dimdate:
-    #     mocked_today = datetime(2024, 11, 21)
-    #     mock_dimdate.return_value = mocked_today
-    assert dim_date() == f'Pass: no actions required for date'
+def test_dim_date_with_existing_data(s3_client):
+    """Test dim_date() when date data already exists in the processed bucket."""
+    # Mock existing date data in the processed bucket
+    wr.s3.to_parquet(df=mock_date, path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
+    with patch("data_transformation.update_dim_date") as mock_update_dim_date:
+        result = dim_date()
+        # Verify update_dim_date is not called when dates are up-to-date
+        mock_update_dim_date.assert_not_called()
+        assert result == "Pass: no actions required for date"
 
 
-# def test_update_dim_date_is_called_when_date_needs_updating():
-#     wr.s3.to_parquet(df=mock_date, path=f's3://{PROCESSED_BUCKET}/date/*', dataset=False)
-#     with mock.patch('data_transformation.dim_date') as mock_datetime:
-#         mock_datetime.return_value = datetime(2024, 11, 22)
+def test_dim_date_with_missing_data(s3_client):
+    """Test dim_date() when no existing date data is found."""
+    with patch("data_transformation.update_dim_date") as mock_update_dim_date:
+        # Expect dim_date() to call update_dim_date starting from 2020-01-01
+        result = dim_date()
+        mock_update_dim_date.assert_called_once_with(datetime(2020, 1, 1))
+        assert result == datetime(2020, 1, 1)
 
+def test_dim_date_calls_update_dim_date_with_future_data(s3_client):
+    # Mock future date data in the processed bucket
+    future_date = pd.DataFrame({
+        "date_id": [datetime(2024, 11, 24)],
+        "year": [2024],
+        "month": [11],
+        "day": [24],
+        "day_of_week": [6],
+        "day_name": ["Sunday"],
+        "month_name": ["November"],
+        "quarter": [4]
+    })
+    wr.s3.to_parquet(df=future_date, path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
+    with patch("data_transformation.update_dim_date") as mock_update_dim_date:
+        # check update_dim_date is called with the future start_date (24 + delta 1)
+        dim_date()
+        mock_update_dim_date.assert_called_once_with(datetime(2024, 11, 25).date())
 
-@pytest.mark.skip
-def test_sales_order():
-    pass
