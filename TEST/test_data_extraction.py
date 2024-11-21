@@ -7,6 +7,7 @@ from data_extraction import (
     lambda_handler,
     connect_db,
     close_db,
+    INGESTION_BUCKET
 )
 from data_extraction import format_to_parquet
 import pyarrow as pa
@@ -178,7 +179,7 @@ class DummyContext:
 def test_lambda_handler_end_to_end(mock_pg_connection, caplog, sm_client, s3_client):
 
     s3_client.create_bucket(
-        Bucket="team-12-dimensional-transformers-ingestion-bucket",
+        Bucket=INGESTION_BUCKET,
         CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
     )
     sm_client.create_secret(
