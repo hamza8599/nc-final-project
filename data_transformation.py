@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 import json
 import os
 from awswrangler.exceptions import NoFilesFound
+from pyarrow import ArrowInvalid
 
 
 INGESTION_BUCKET = os.getenv('INGESTION_BUCKET', 'default-ingestion-bucket')
@@ -17,7 +18,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 s3 = boto3.client('s3')
-#ingestion_bucket = "team-500-dimensional-transformers-ingestion-bucket"   
+
 
 def design(name, datestamp):
     try:
@@ -25,10 +26,15 @@ def design(name, datestamp):
         design_df = design_df.drop(columns=['created_at', 'last_updated'])
         return design_df
     except ClientError as e:
-        logger.info(f"Alert: Failed in design function: {str(e)}")
+        logger.info(f"Alert: Failed in currency function: {str(e)}")
+        raise
+    except ArrowInvalid as e:
+        logger.info(f"Alert: Design file type invalid {str(e)}")
+        raise
+
 
 def currency(name, datestamp):
-    try: 
+    try:
         currency_df = wr.s3.read_parquet(f"s3://{INGESTION_BUCKET}/currency/*/*/*/{name} {datestamp}", dataset=True)
         currency = {'GBP': 'Great British Pound', 'USD':'United States Dollar', 'EUR':'Euro'}
         currency_df = currency_df.drop(columns=["created_at", "last_updated"])
@@ -36,6 +42,11 @@ def currency(name, datestamp):
         return currency_df
     except ClientError as e:
         logger.info(f"Alert: Failed in currency function: {str(e)}")
+        raise
+    except ArrowInvalid as e:
+        logger.info(f"Alert: Currency file type invalid {str(e)}")
+        raise
+
 
 def staff(name, datestamp):
     try:
@@ -45,6 +56,9 @@ def staff(name, datestamp):
         return departmental_staff[["staff_id", "first_name", "last_name", "department_name", "location", "email_address"]]
     except ClientError as e:
         logger.info(f"Alert: Failed in staff function: {str(e)}")
+    except ArrowInvalid as e:
+        logger.info(f"Alert: Staff file type invalid {str(e)}")
+        raise
 
 
 def counterparty(name, datestamp):
@@ -72,14 +86,22 @@ def counterparty(name, datestamp):
     })
     except ClientError as e:
         logger.info(f"Alert: Failed in counterparty function: {str(e)}")
+    except ArrowInvalid as e:
+        logger.info(f"Alert: file type invalid {str(e)}")
+        raise
+
 
 def address(name, datestamp):
     try:
         address_df = wr.s3.read_parquet(f's3://{INGESTION_BUCKET}/address/*/*/*/{name} {datestamp}')
-        dims_address_df = address_df.drop(columns=['created_at', 'last_updated'])
+        dims_address_df = address_df.drop(columns=['created_at', 'last_updated']).rename(columns={"address_id": "location_id"})
         return dims_address_df
     except ClientError as e:
         logger.info(f"Alert: Failed in location function: {str(e)}")
+    except ArrowInvalid as e:
+        logger.info(f"Alert: file type invalid {str(e)}")
+        raise
+
 
 def update_dim_date(start_date):
         end_date=datetime.today()
@@ -92,8 +114,10 @@ def update_dim_date(start_date):
         dim_date_df['day_name'] = dim_date_df['date_id'].dt.day_name()
         dim_date_df['month_name'] = dim_date_df['date_id'].dt.month_name()
         dim_date_df['quarter'] = dim_date_df['date_id'].dt.quarter
-        wr.s3.to_parquet(df=dim_date_df,path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False )
+        wr.s3.to_parquet(df=dim_date_df,path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
         logger.info('Date table updated')
+        return dim_date_df
+
 
 def dim_date():
     try:
@@ -101,7 +125,7 @@ def dim_date():
         last_date = last_updated.iloc[-1]['date_id'].date()
         if last_date == datetime.today().date():
             logger.info(f"Pass: no actions required for date")
-            return
+            return f'Pass: no actions required for date'
         else:
             start_date = last_date+timedelta(days=1)
             update_dim_date(start_date)
@@ -121,15 +145,15 @@ def sales_order(name, datestamp):
         return sales_order_df.drop(columns=["created_at", "last_updated"])
     except ClientError as e:
         logger.info(f"Alert: Failed in sales_order function: {str(e)}")
+    except ArrowInvalid as e:
+        logger.info(f"Alert: file type invalid {str(e)}")
+        raise
+
 
 def get_object_path(records):
     """Extracts bucket and object references from Records field of event."""
     return records[0]["s3"]["bucket"]["name"], records[0]["s3"]["object"]["key"]
 
-class InvalidFileTypeError(Exception):
-    """Traps error where file type is not txt."""
-
-    pass
 
 def lambda_handler(event, context):
     dim_date()
@@ -137,34 +161,33 @@ def lambda_handler(event, context):
     s3_bucket_name, s3_object_name = get_object_path(event["Records"])
     logger.info(f"Bucket is {s3_bucket_name}")
     logger.info(f"Object key is {s3_object_name}")
-    
+
     tablename= s3_object_name.split('/', 5)[0]
     filename = s3_object_name.split('/', 5)[4]
     name, datestamp = filename.split('+')
+
     print(f"==>> name: {name}")
     print(f"==>> datestamp: {datestamp}")
 
     valid_objects = ["sales_order", "design", "currency", "counterparty", "staff", "address"]
-
+    
     if tablename not in valid_objects:
         logger.info(f"Pass: no actions required for {tablename}")
-        logger.info(json.dumps(event, indent=2))
-        return {
-        'statusCode': 200,
-        'body': json.dumps(f'{tablename} processed successfully')
-        }
-    
-    logger.info(f'working on {tablename}')
-    try:
-        func_name = f"{tablename}(name, datestamp)"
-        updated_df = eval(func_name)
-        wr.s3.to_parquet(
-        df=updated_df,
-        path=f's3://{PROCESSED_BUCKET}/{tablename}/{tablename}.parquet',
-        dataset=False
-        )
-    except ClientError as e:
-        logger.info(f"Alert: Failed to call the function: {str(e)}")
-    logger.info(f"{tablename} updated on process bucket")
-
-
+        return {'body': json.dumps(f'Pass: no actions required for {tablename}')}
+    else:
+        logger.info(f'working on {tablename}')
+        try:
+            func_name = f"{tablename}(name, datestamp)"
+            updated_df = eval(func_name)
+            wr.s3.to_parquet(
+                df=updated_df,
+                path=f's3://{PROCESSED_BUCKET}/{tablename}/{tablename}',
+                dataset=False
+                )
+            logger.info(f"{tablename} updated on process bucket")
+            return {
+                    'statusCode': 200,
+                    'body': json.dumps(f'{tablename} processed successfully')
+                    }
+        except ClientError as e:
+            logger.info(f"Alert: Failed to call the function: {str(e)}")

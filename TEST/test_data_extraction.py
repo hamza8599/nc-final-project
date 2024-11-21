@@ -4,12 +4,12 @@ from data_extraction import (
     get_created_date,
     reset_secrets,
     existing_secret,
+    format_to_parquet,
     lambda_handler,
     connect_db,
     close_db,
     INGESTION_BUCKET
 )
-from data_extraction import format_to_parquet
 import pyarrow as pa
 from moto import mock_aws
 import boto3
@@ -95,13 +95,19 @@ def test_get_creted_date_returns_creted_at_date():
     expected_response = datetime(2020, 11, 14, 9, 41, 9, 839000)
     assert response == expected_response
 
+# def test_format_to_parquet_returns_formated_data():
+#     mock_conn = MagicMock()
+#     data={"column1": [1, 2, 3], "column2": ["a", "b", "c"]}
+#     pyarrow_table = pa.table(data)
+#     formated_data=format_to_parquet(data,mock_conn,pyarrow_table)
+#     close_db(mock_conn)
+#     assert isinstance(formated_data,pa.Table)
 
 def test_write_table_to_parquet_buffer_format():
     data = {"column1": [1, 2, 3], "column2": ["a", "b", "c"]}
     pyarrow_table = pa.table(data)
     response = write_table_to_parquet_buffer(pyarrow_table)
     assert isinstance(response, BytesIO)
-
 
 def test_store_secrets_new_secret_if_not_exist(sm_client):
     secret_name = "northcoders"
@@ -161,14 +167,6 @@ def test_close_db():
     mock_conn = MagicMock()
     close_db(mock_conn)
     mock_conn.close.assert_called_once()
-
-
-# def test_format_to_parquet_returns_formated_data():
-#     data=[[1],['2020-11-14 09:41:09.839000'],['2020-11-14 09:41:09.839000'],['test']]
-#     formated_data=format_to_parquet(data,conn)
-#     close_db(conn)
-#     assert isinstance(formated_data,pyarrow.Table)
-
 
 class DummyContext:
     pass
