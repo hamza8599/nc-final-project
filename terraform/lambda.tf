@@ -1,4 +1,4 @@
-
+# Ingestion Lambda
 
 resource "aws_lambda_function" "lambda_ingestion_func" {
   function_name = var.lambda_ingestion
@@ -20,8 +20,6 @@ resource "aws_lambda_function" "lambda_ingestion_func" {
   }
 }
 
-
-
 data "archive_file" "lambda" {
   type             = "zip"
   output_file_mode = "0666"
@@ -29,6 +27,7 @@ data "archive_file" "lambda" {
   output_path      = "${path.module}/../ingestion-lambda.zip"
 }
 
+# Process Lambda
 
 resource "aws_lambda_function" "lambda_process_func" {
   function_name = var.lambda_process
@@ -50,12 +49,39 @@ resource "aws_lambda_function" "lambda_process_func" {
   }
 }
 
-
-
 data "archive_file" "process-lambda" {
   type             = "zip"
   output_file_mode = "0666"
   source_file      = "${path.module}/../data_transformation.py" 
   output_path      = "${path.module}/../process-lambda.zip"
+}
+
+# Load Lambda
+
+resource "aws_lambda_function" "lambda_load_func" {
+  function_name = var.lambda_load
+  role          = aws_iam_role.lambda_executive_role.arn
+  handler       = "data_loading.lambda_handler"  
+  runtime       = var.python_runtime
+  timeout = 600
+  s3_bucket = aws_s3_bucket.lambda_code.id
+  s3_key = aws_s3_object.load-lambda-code.key
+  layers = [
+    "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python39:26"
+  ]
+  environment {
+    variables = {
+      INGESTION_BUCKET = var.ingestion_bucket
+      PROCESSED_BUCKET = var.processed_bucket
+      LAMBDA_BUCKET    = var.lambda_bucket
+    }
+  }
+}
+
+data "archive_file" "load-lambda" {
+  type             = "zip"
+  output_file_mode = "0666"
+  source_file      = "${path.module}/../data_data_loading.py" 
+  output_path      = "${path.module}/../load-lambda.zip"
 }
 
