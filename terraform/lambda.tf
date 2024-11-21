@@ -81,7 +81,7 @@ resource "aws_lambda_function" "lambda_load_func" {
 data "archive_file" "load-lambda" {
   type             = "zip"
   output_file_mode = "0666"
-  source_file      = "${path.module}/../data_data_loading.py" 
+  source_file      = "${path.module}/../data_loading.py" 
   output_path      = "${path.module}/../load-lambda.zip"
 }
 
