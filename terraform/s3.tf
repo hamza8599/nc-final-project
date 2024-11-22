@@ -30,3 +30,9 @@ resource "aws_s3_object" "load-lambda-code" {
   key = "load-lambda.zip"
   source = "${path.module}/../load-lambda.zip"
 }
+
+# resource "aws_s3_object" "layer_code" {
+#   bucket = aws_s3_bucket.lambda_code.id
+#   key = "lambda_layer.zip"
+#   source = "${path.module}/../lambda_layer.zip"
+# }

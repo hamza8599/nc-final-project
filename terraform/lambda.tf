@@ -67,7 +67,9 @@ resource "aws_lambda_function" "lambda_load_func" {
   s3_bucket = aws_s3_bucket.lambda_code.id
   s3_key = aws_s3_object.load-lambda-code.key
   layers = [
-    "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python39:26"
+    "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python39:26",
+    "arn:aws:lambda:eu-west-2:770693421928:layer:Klayers-p39-SQLAlchemy:20",
+    "arn:aws:lambda:eu-west-2:770693421928:layer:Klayers-p39-psycopg2-binary:1"
   ]
   environment {
     variables = {
@@ -85,3 +87,16 @@ data "archive_file" "load-lambda" {
   output_path      = "${path.module}/../load-lambda.zip"
 }
 
+# data "archive_file" "layer" {
+#   type = "zip"
+#   source_dir = "${path.module}/../python"
+#   output_path = "${path.module}/../lambda_layer.zip"
+# }
+
+# resource "aws_lambda_layer_version" "sqlalchemy_layer" {
+#   layer_name          = "sqlalchemy_layer"
+#   compatible_runtimes = [var.python_runtime]
+#   #s3_bucket           = aws_s3_bucket.code_bucket.id
+#   #s3_key              = "${path.module}/../lambda_layer.zip"
+#   filename = "${path.module}/../lambda_layer.zip"
+# }
