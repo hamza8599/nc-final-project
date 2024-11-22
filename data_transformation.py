@@ -129,6 +129,7 @@ def dim_date():
         else:
             start_date = last_date+timedelta(days=1)
             update_dim_date(start_date)
+            return start_date
     except NoFilesFound:
         start_date = datetime(2020, 1, 1)
         update_dim_date(start_date)

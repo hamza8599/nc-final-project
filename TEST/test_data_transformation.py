@@ -12,29 +12,7 @@ from pyarrow import ArrowInvalid
 from freezegun import freeze_time
 
 
-mock_design = pd.DataFrame({
-    "design_id": [1], 
-    "design_name": ["abc"], 
-    "file_location": ["path"], 
-    "file_name": ["path name"],
-    "created_at": [datetime.now()], 
-    "last_updated": [datetime.now()]
-})
-
-mock_design_2 = pd.DataFrame({
-    "design_id": [1], 
-    "design_name": ["abc"], 
-    "file_location": ["path"], 
-    "file_name": ["path name"]
-})
-
-mock_currency = pd.DataFrame({
-    "currency_id": [1, 2, 3],
-    "currency_code": ['GBP', 'USD', 'EUR'], 
-    "created_at": [datetime.now(), datetime.now(), datetime.now()], 
-    "last_updated": [datetime.now(), datetime.now(), datetime.now()]
-})
-
+"""Mock Extracted DataFrames"""
 mock_staff = pd.DataFrame({
     "staff_id": [1, 2], 
     "first_name": ["will", "bill"], 
@@ -44,6 +22,15 @@ mock_staff = pd.DataFrame({
     "created_at": [datetime.now(), datetime.now()], 
     "last_updated": [datetime.now(), datetime.now()]
 })
+
+mock_design = pd.DataFrame({
+                "design_id": [1], 
+                "design_name": ["abc"], 
+                "file_location": ["path"], 
+                "file_name": ["path name"],
+                "created_at": [datetime.now()], 
+                "last_updated": [datetime.now()]
+                })
 
 mock_address = pd.DataFrame({
     "address_id": [1, 2, 3], 
@@ -57,6 +44,13 @@ mock_address = pd.DataFrame({
     "created_at": [datetime.now(), datetime.now(), datetime.now()], 
     "last_updated": [datetime.now(), datetime.now(), datetime.now()]
 })
+
+mock_currency = pd.DataFrame({
+            "currency_id": [1, 2, 3],
+            "currency_code": ['GBP', 'USD', 'EUR'], 
+            "created_at": [datetime.now(), datetime.now(), datetime.now()], 
+            "last_updated": [datetime.now(), datetime.now(), datetime.now()]
+        })
 
 mock_cp = pd.DataFrame({
     "counterparty_id": [1, 2], 
@@ -93,15 +87,16 @@ mock_department = pd.DataFrame({
 })
 
 mock_date = pd.DataFrame({
-    "date_id":[datetime(2024, 11, 21)],
+    "date_id":[datetime(2024, 11, 19)],
     "year": [2024],
     "month": [11],
-    "day": [21],
-    "day_of_week": [3],
-    "day_name": ["Thursday"],
+    "day": [19],
+    "day_of_week": [1],
+    "day_name": ["Tuesday"],
     "month_name": ["November"],
     "quarter": [4]
 })
+
 
 @pytest.fixture()
 def aws_creds():
@@ -112,10 +107,10 @@ def aws_creds():
     os.environ["AWS_DEFAULT_REGION"] = "eu-west-2"
 
 
+"""Mock s3 buckets"""
 @pytest.fixture(autouse=True)
 def s3_client(aws_creds):
     with mock_aws():
-        # Create the required buckets in the mock S3 environment
         mock_s3 = boto3.client("s3")
         mock_s3.create_bucket(
             Bucket=INGESTION_BUCKET,
@@ -125,13 +120,11 @@ def s3_client(aws_creds):
             Bucket=PROCESSED_BUCKET,
             CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
         )
-        
-        # Now mock the upload of files
         yield mock_s3
 
 
+"""Test staff function for dim_staff"""
 def test_staff_merge(s3_client):
-    # Upload mock data to S3
     wr.s3.to_parquet(df=mock_staff, path=f's3://{INGESTION_BUCKET}/staff/a/a/a/staff 2024-11-20', dataset=False)
     wr.s3.to_parquet(df=mock_department, path=f's3://{INGESTION_BUCKET}/department/a/a/a/department 2024-11-20', dataset=False)
     result = staff("staff", "2024-11-20")
@@ -140,13 +133,30 @@ def test_staff_merge(s3_client):
     assert result["department_name"].nunique() == 2, "More than one department in the result"
 
 
-def test_dim_design_table(s3_client):
+"""Test design function for dim_design"""
+def test_design_returns_correct_dim_design_columns(s3_client):
     wr.s3.to_parquet(df=mock_design, path=f"s3://{INGESTION_BUCKET}/design/a/a/a/design 2024-11-20", dataset=False)
-    result = design("design", "2024-11-20")
-    assert list(result.columns) == ["design_id", "design_name", "file_location", "file_name"]
+    dim_design = design("design", "2024-11-20")
+    assert list(dim_design.columns) == ["design_id", "design_name", "file_location", "file_name"]
+
+def test_missing_column_raises_error(s3_client):
+    missing_design_id_df = pd.DataFrame({
+        "design_name": ["abc"],
+        "file_location": ["location"],
+        "file_name": ["name"]
+    })
+    wr.s3.to_parquet(df=missing_design_id_df, path=f"s3://{INGESTION_BUCKET}/design/a/a/a/design 2024-11-20", dataset=False)
+    with pytest.raises(KeyError):
+        design("design", "2024-11-20")
+
+def test_design_invalid_file_type_raises_error(s3_client):
+    wr.s3.to_csv(df=mock_design, path=f"s3://{INGESTION_BUCKET}/design/a/a/a/design 2024-11-20", dataset=False)
+    with pytest.raises(ArrowInvalid):
+        design("design", "2024-11-20")
 
 
-def test_counter_party_merge(s3_client):
+"""Test counterparty function for dim_counterparty"""
+def test_counterparty_merge(s3_client):
     wr.s3.to_parquet(df=mock_address, path=f"s3://{INGESTION_BUCKET}/address/a", dataset=False)
     wr.s3.to_parquet(df=mock_cp, path=f"s3://{INGESTION_BUCKET}/counterparty/a/a/a/counterparty 2024-11-20", dataset=False)
     result = counterparty("counterparty", "2024-11-20")
@@ -163,33 +173,97 @@ def test_counter_party_merge(s3_client):
     assert result["counterparty_legal_city"].iloc[1] == "London"
 
 
+"""Test address function for dim_location"""
 def test_location_merge(s3_client):
     wr.s3.to_parquet(df=mock_address, path=f"s3://{INGESTION_BUCKET}/address/a/a/a/address 2024-11-20", dataset=False)
     result = address("address", "2024-11-20")
     assert result["location_id"].iloc[0] == 1
     assert result["city"].iloc[1] == "London"
 
+def test_address_returns_correct_dim_location_columns(s3_client):
+    wr.s3.to_parquet(df=mock_address, path=f"s3://{INGESTION_BUCKET}/address/a/a/a/address 2024-11-20", dataset=False)
+    dim_location = address("address", "2024-11-20")
+    expected_columns = ["location_id", "address_line_1", "address_line_2", "district", "city", "postal_code", "country", "phone"]
+    assert list(dim_location.columns) == expected_columns
+
+
+"""Test currency function for dim_currency"""
+def test_currency_returns_correct_dim_currency_columns(s3_client):
+    expected_columns = ["currency_id","currency_code","currency_name"]
+    wr.s3.to_parquet(df=mock_currency, path=f"s3://{INGESTION_BUCKET}/currency/a/a/a/currency 2024-11-20", dataset=False)
+    dim_currency = currency("currency", "2024-11-20")
+    assert list(dim_currency.columns) == expected_columns
 
 def test_currency_mapping(s3_client):
     wr.s3.to_parquet(df=mock_currency, path=f"s3://{INGESTION_BUCKET}/currency/a/a/a/currency 2024-11-20", dataset=False)
-    result = currency("currency", "2024-11-20")
-    assert "currency_name" in result.columns
-    assert result["currency_name"].iloc[0] == "Great British Pound"
-    assert result["currency_name"].iloc[1] == "United States Dollar"
-    assert result["currency_name"].iloc[2] == "Euro"
+    dim_currency = currency("currency", "2024-11-20")
+    assert "currency_name" in dim_currency.columns
+    assert dim_currency["currency_name"].iloc[0] == "Great British Pound"
+    assert dim_currency["currency_name"].iloc[1] == "United States Dollar"
+    assert dim_currency["currency_name"].iloc[2] == "Euro"
 
 
-def test_missing_required_column(s3_client):
-    missing_design_id_df = pd.DataFrame({
-        "design_name": ["abc"],
-        "file_location": ["location"],
-        "file_name": ["name"]
-    })
-    wr.s3.to_parquet(df=missing_design_id_df, path=f"s3://{INGESTION_BUCKET}/design/a/a/a/design 2024-11-20", dataset=False)
-    with pytest.raises(KeyError):
-        design("design", "2024-11-20")
-     
+"""Test date functions for dim_date"""
+def test_update_dim_date_returns_correct_columns():
+    mocked_date = datetime(2024, 11, 20)
+    dim_date_df = update_dim_date(mocked_date)
+    assert "date_id" in dim_date_df.columns
+    assert "year" in dim_date_df.columns
+    assert "month" in dim_date_df.columns
+    assert "day" in dim_date_df.columns
+    assert "day_of_week" in dim_date_df.columns
+    assert "day_name" in dim_date_df.columns
+    assert "month_name" in dim_date_df.columns
+    assert "quarter" in dim_date_df.columns
 
+@freeze_time("2024-11-19")
+def test_dim_date_with_existing_data(s3_client):
+    wr.s3.to_parquet(df=mock_date, path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
+    result = dim_date()
+    assert result == "Pass: no actions required for date"
+
+def test_dim_date_with_no_files_found(s3_client):
+    result = dim_date()
+    assert result == datetime(2020, 1, 1)
+
+def test_dim_date_calls_update_dim_date_with_future_data(s3_client):
+    wr.s3.to_parquet(df=mock_date, path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
+    result = dim_date()
+    assert result == datetime(2024, 11, 20).date()
+
+def test_update_dim_date(s3_client):
+    start_date = datetime(2024, 11, 20).date()
+    result= update_dim_date(start_date)
+    assert result.iloc[0]["date_id"] == datetime(2024,11,20)
+
+
+"""Test sales order function for fact_sales_order"""
+def test_sales_order_returns_correct_columns(s3_client):
+    wr.s3.to_parquet(df=mock_sales_order,
+                    path=f"s3://{INGESTION_BUCKET}/sales_order/a/a/a/sales_order 2024-11-20",
+                    dataset=False)
+    fso_df = sales_order("sales_order", "2024-11-20")
+    assert "sales_order_id" in fso_df.columns
+    assert "created_date" in fso_df.columns
+    assert "created_time" in fso_df.columns
+    assert "last_updated_date" in fso_df.columns
+    assert "last_updated_time" in fso_df.columns
+    assert "sales_staff_id" in fso_df.columns
+    assert "units_sold" in fso_df.columns
+    assert "unit_price" in fso_df.columns
+    assert "currency_id" in fso_df.columns
+    assert "design_id" in fso_df.columns
+    assert "agreed_payment_date" in fso_df.columns
+    assert "agreed_delivery_date" in fso_df.columns
+    assert "agreed_delivery_location_id" in fso_df.columns
+
+def test_sales_order_raises_error_for_invalid_file_type(s3_client):
+    wr.s3.to_csv(df=mock_design, path=f"s3://{INGESTION_BUCKET}/sales_order/a/a/a/sales_order 2024-11-20", dataset=False)
+    with pytest.raises(ArrowInvalid):
+        sales_order("sales_order", "2024-11-20")
+
+
+"""Test Lambda Handler"""
 def test_lambda_handler(s3_client):
     mock_event = {
         "Records": [{
@@ -205,11 +279,6 @@ def test_lambda_handler(s3_client):
         assert response["statusCode"] == 200
         assert "design processed successfully" in response["body"]
 
-def test_design_invalid_file_type_raises_error(s3_client):
-    wr.s3.to_csv(df=mock_design, path=f"s3://{INGESTION_BUCKET}/design/a/a/a/design 2024-11-20", dataset=False)
-    with pytest.raises(ArrowInvalid):
-        design("design", "2024-11-20")
-
 def test_lambda_handler_no_action_required_for_invalid_tablename(s3_client):
     mock_event_no_action = {
         "Records": [{
@@ -221,44 +290,4 @@ def test_lambda_handler_no_action_required_for_invalid_tablename(s3_client):
     }
     response = lambda_handler(mock_event_no_action, {})
     assert "Pass: no actions required" in response["body"]
-
-
-def test_update_dim_date_returns_correct_columns():
-    mocked_date = datetime(2024, 11, 20)
-    dim_date_df = update_dim_date(mocked_date)
-    assert "date_id" in dim_date_df.columns
-    assert "year" in dim_date_df.columns
-    assert "month" in dim_date_df.columns
-    assert "day" in dim_date_df.columns
-    assert "day_of_week" in dim_date_df.columns
-    assert "day_name" in dim_date_df.columns
-    assert "month_name" in dim_date_df.columns
-    assert "quarter" in dim_date_df.columns
-
-
-def test_sales_order_returns_correct_columns(s3_client):
-    wr.s3.to_parquet(df=mock_sales_order,
-                    path=f"s3://{INGESTION_BUCKET}/sales_order/a/a/a/sales_order 2024-11-20",
-                    dataset=False)
-    result = sales_order("sales_order", "2024-11-20")
-    assert "sales_order_id" in result.columns
-    assert "created_date" in result.columns
-    assert "created_time" in result.columns
-    assert "last_updated_date" in result.columns
-    assert "last_updated_time" in result.columns
-    assert "sales_staff_id" in result.columns
-    assert "units_sold" in result.columns
-    assert "unit_price" in result.columns
-    assert "currency_id" in result.columns
-    assert "design_id" in result.columns
-    assert "agreed_payment_date" in result.columns
-    assert "agreed_delivery_date" in result.columns
-    assert "agreed_delivery_location_id" in result.columns
-
-def test_sales_order_raises_error_for_invalid_file_type():
-    wr.s3.to_csv(df=mock_design, path=f"s3://{INGESTION_BUCKET}/sales_order/a/a/a/sales_order 2024-11-20", dataset=False)
-    with pytest.raises(ArrowInvalid):
-        sales_order("sales_order", "2024-11-20")
-
-
 
