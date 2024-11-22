@@ -15,7 +15,7 @@ def reset_secrets(sm_client, secret_name):
     except ClientError as e:
         print(e)
 
-secrets_manager_client = boto3.client("secretsmanager")
+secrets_manager_client = boto3.client("secretsmanager", region_name = 'eu-west-2')
 response = secrets_manager_client.get_secret_value(SecretId='psql-creds')
 secret_dict = json.loads(response["SecretString"])
 user = secret_dict["username"]
@@ -31,7 +31,7 @@ for table in table_names:
     reset_secrets(secrets_manager_client, table[0])
 conn.close()
 
-secrets_manager_client = boto3.client("secretsmanager")
+#secrets_manager_client = boto3.client("secretsmanager")
 response = secrets_manager_client.get_secret_value(SecretId='data-warehouse-creds')
 secret_dict = json.loads(response["SecretString"])
 user = secret_dict["username"]
