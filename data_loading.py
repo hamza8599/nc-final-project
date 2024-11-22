@@ -11,6 +11,7 @@ from pg8000.native import Connection
 from sqlalchemy import create_engine
 import psycopg2
 from psycopg2.extras import execute_values
+import time
 
 PROCESSED_BUCKET = os.getenv('PROCESSED_BUCKET', 'team-501-dimensional-transformers-process-bucket')
 logger = logging.getLogger()
@@ -63,11 +64,12 @@ def load_data(filename):
     #df.drop(columns=['staff_id'], inplace=True)
     df.columns = [c.lower() for c in df.columns]
     if filename=='sales_order':
+        time.sleep(120)
         table_name=f'fact_{filename}'
-        df.rename(columns={"staff_id": "sales_staff_id", "updated_date": "last_updated_date", "updated_time": "last_updated_time"})
-    elif filename=="address":
+        df=df.rename(columns={"staff_id": "sales_staff_id", "updated_date": "last_updated_date", "updated_time": "last_updated_time"})
+    elif filename == "address":
         table_name = "dim_location"
-        df.rename(columns= {"address_id": "location_id"})
+        df=df.rename(columns= {"address_id": "location_id"})
     else:
         table_name=f'dim_{filename}'
 
@@ -94,4 +96,6 @@ def lambda_handler(event, context):
     name, format = filename.split('.')
     logger.info(f"loading data to: {name}")
     load_data(name)
+#     load_data(event)
  
+# lambda_handler('sales_order','hvuvuy')
