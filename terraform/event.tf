@@ -2,7 +2,7 @@
 
 resource "aws_cloudwatch_event_rule" "scheduler" {
   name = "lambda_5_minutes"
-  schedule_expression = "rate(5 minutes)" # Time to be finalised
+  schedule_expression = "rate(2 minutes)" # Time to be finalised
 }
 
 resource "aws_cloudwatch_event_target" "lambda_target" {

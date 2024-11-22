@@ -63,6 +63,7 @@ resource "aws_lambda_function" "lambda_load_func" {
   role          = aws_iam_role.lambda_executive_role.arn
   handler       = "data_loading.lambda_handler"  
   runtime       = var.python_runtime
+  memory_size = 512
   timeout = 600
   s3_bucket = aws_s3_bucket.lambda_code.id
   s3_key = aws_s3_object.load-lambda-code.key

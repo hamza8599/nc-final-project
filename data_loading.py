@@ -64,7 +64,9 @@ def load_data(filename):
     #df.drop(columns=['staff_id'], inplace=True)
     df.columns = [c.lower() for c in df.columns]
     if filename=='sales_order':
-        time.sleep(120)
+        logger.info("sleeping for 100 seconds")
+        time.sleep(100)
+        logger.info("i'm back")
         table_name=f'fact_{filename}'
         df=df.rename(columns={"staff_id": "sales_staff_id", "updated_date": "last_updated_date", "updated_time": "last_updated_time"})
     elif filename == "address":
