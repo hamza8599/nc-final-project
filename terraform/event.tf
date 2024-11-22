@@ -2,7 +2,7 @@
 
 resource "aws_cloudwatch_event_rule" "scheduler" {
   name = "lambda_5_minutes"
-  schedule_expression = "rate(2 minutes)" # Time to be finalised
+  schedule_expression = "rate(5 minutes)" # Time to be finalised
 }
 
 resource "aws_cloudwatch_event_target" "lambda_target" {
@@ -37,7 +37,6 @@ resource "aws_lambda_permission" "allow_s3_to_invoke_lambda" {
   function_name = aws_lambda_function.lambda_process_func.function_name
   principal = "s3.amazonaws.com"
   source_arn = aws_s3_bucket.ingestion_bucket.arn
-  # source_account = data.aws_caller_identity.current.account_id
 }
 
 # Event for Load lambda
@@ -57,5 +56,4 @@ resource "aws_lambda_permission" "allow_s3_to_invoke_load_lambda" {
   function_name = aws_lambda_function.lambda_load_func.function_name
   principal = "s3.amazonaws.com"
   source_arn = aws_s3_bucket.processed_bucket.arn
-  # source_account = data.aws_caller_identity.current.account_id
 }

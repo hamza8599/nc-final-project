@@ -88,16 +88,4 @@ data "archive_file" "load-lambda" {
   output_path      = "${path.module}/../load-lambda.zip"
 }
 
-# data "archive_file" "layer" {
-#   type = "zip"
-#   source_dir = "${path.module}/../python"
-#   output_path = "${path.module}/../lambda_layer.zip"
-# }
 
-# resource "aws_lambda_layer_version" "sqlalchemy_layer" {
-#   layer_name          = "sqlalchemy_layer"
-#   compatible_runtimes = [var.python_runtime]
-#   #s3_bucket           = aws_s3_bucket.code_bucket.id
-#   #s3_key              = "${path.module}/../lambda_layer.zip"
-#   filename = "${path.module}/../lambda_layer.zip"
-# }

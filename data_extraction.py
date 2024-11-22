@@ -10,9 +10,9 @@ from botocore.exceptions import ClientError
 import logging
 import os
 
-INGESTION_BUCKET = os.getenv('INGESTION_BUCKET', 'default-ingestion-bucket')
-PROCESSED_BUCKET = os.getenv('PROCESSED_BUCKET', 'default-processed-bucket')
-LAMBDA_BUCKET = os.getenv('LAMBDA_BUCKET', 'default-lambda-bucket')
+INGESTION_BUCKET = os.getenv("INGESTION_BUCKET", "default-ingestion-bucket")
+PROCESSED_BUCKET = os.getenv("PROCESSED_BUCKET", "default-processed-bucket")
+LAMBDA_BUCKET = os.getenv("LAMBDA_BUCKET", "default-lambda-bucket")
 
 
 def connect_db(secret_name):
@@ -105,9 +105,8 @@ def write_table_to_parquet_buffer(pyarrow_table):
 
 def get_created_date(data, columns):
     """get created_date from latest data fetch to use for versioning/file names"""
-    #  columns = [col["name"] for col in conn.columns]
     df = pd.DataFrame(data, columns=columns)
-    df["created_at"] = pd.to_datetime(df["created_at"])  # added
+    df["created_at"] = pd.to_datetime(df["created_at"])
     created_at = df["created_at"].max()
     return created_at
 

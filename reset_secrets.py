@@ -1,5 +1,6 @@
 from data_extraction import connect_db, reset_secrets, close_db
 import boto3
+from sqlalchemy import text, engine
 
 conn = connect_db("psql_creds")
 secret_manager_client = boto3.client("secretsmanager")
@@ -11,7 +12,19 @@ for table in table_names:
 close_db(conn)
 
 conn = connect_db("data-warehouse-creds")
-tables = ["fact_sales_order","dim_date", "dim_design", "dim_location", "dim_counterparty", "dim_currency", "dim_staff"]
+result = text("ALTER SEQUENCE sales_record_id RESTART WITH 1")
+with engine.connect() as connection:
+    connection.execute(result)
+
+tables = [
+    "fact_sales_order",
+    "dim_date",
+    "dim_design",
+    "dim_location",
+    "dim_counterparty",
+    "dim_currency",
+    "dim_staff",
+]
 for table in tables:
     conn.run(f"DELETE FROM {table};")
 close_db(conn)

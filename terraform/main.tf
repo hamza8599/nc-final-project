@@ -18,7 +18,7 @@ provider "aws" {
   default_tags {
     tags = {
       name = "Dimensional Transformers Project"
-      description = "Totesy Data Management Platform"
+      description = "Totesys Data Management Platform"
       environment = "Dev"
       date = "11/11/24"
     }

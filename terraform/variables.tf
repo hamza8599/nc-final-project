@@ -22,10 +22,11 @@ variable "lambda_process" {
   default = "lambda-process-handler"
 }
 
+variable "lambda_load" {
+  default = "lambda-load-handler"
+}
+
 variable "python_runtime" {
   type    = string
   default = "python3.9"
-}
-variable "lambda_load" {
-  default = "lambda-load-handler"
 }
