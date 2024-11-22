@@ -140,9 +140,9 @@ def sales_order(name, datestamp):
         sales_order_df = wr.s3.read_parquet(f"s3://{INGESTION_BUCKET}/sales_order/*/*/*/{name} {datestamp}", dataset=True)
         sales_order_df["created_date"] = pd.to_datetime(sales_order_df["created_at"]).dt.date
         sales_order_df["created_time"] = pd.to_datetime(sales_order_df["created_at"]).dt.time
-        sales_order_df["updated_date"] = pd.to_datetime(sales_order_df["last_updated"]).dt.date
-        sales_order_df["updated_time"] = pd.to_datetime(sales_order_df["last_updated"]).dt.time
-        return sales_order_df.drop(columns=["created_at", "last_updated"])
+        sales_order_df["last_updated_date"] = pd.to_datetime(sales_order_df["last_updated"]).dt.date
+        sales_order_df["last_updated_time"] = pd.to_datetime(sales_order_df["last_updated"]).dt.time
+        return sales_order_df.drop(columns=["created_at", "last_updated"]).rename(columns={"staff_id":"sales_staff_id"})
     except ClientError as e:
         logger.info(f"Alert: Failed in sales_order function: {str(e)}")
     except ArrowInvalid as e:
@@ -170,7 +170,7 @@ def lambda_handler(event, context):
     print(f"==>> datestamp: {datestamp}")
 
     valid_objects = ["sales_order", "design", "currency", "counterparty", "staff", "address"]
-    
+
     if tablename not in valid_objects:
         logger.info(f"Pass: no actions required for {tablename}")
         return {'body': json.dumps(f'Pass: no actions required for {tablename}')}

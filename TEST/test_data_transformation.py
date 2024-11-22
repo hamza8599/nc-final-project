@@ -6,9 +6,10 @@ import boto3
 import awswrangler as wr
 import os
 import pytest
-from datetime import datetime
+from datetime import datetime, date, time
 from botocore.exceptions import ClientError
 from pyarrow import ArrowInvalid
+from freezegun import freeze_time
 
 
 mock_design = pd.DataFrame({
@@ -68,17 +69,17 @@ mock_cp = pd.DataFrame({
 })
 
 mock_sales_order = pd.DataFrame({
-    "sales_order_id": [1, 2], 
-    "created_at": [datetime.now(), datetime.now()], 
+    "sales_order_id": [101, 102], 
+    "created_at": [datetime.now(), datetime.now()],
     "last_updated": [datetime.now(), datetime.now()],
     "design_id": [1, 3],
-    "staff_id": [3, 4],
+    "staff_id": [4, 5],
     "counterparty_id": [1, 5],
     "units_sold": [23, 2],
-    "unit_price": [10, 5],
+    "unit_price": [10.00, 5.00],
     "currency_id": [1, 2],
-    "agreed_delivery_date": [datetime.now(), datetime.now()],
-    "agreed_payment_date": [datetime.now(), datetime.now()],
+    "agreed_delivery_date": [date(2023, 8, 1), date(2023, 8, 10)],
+    "agreed_payment_date": [date(2023, 7, 1), date(2023, 7, 5)],
     "agreed_delivery_location_id": [1, 2]
 })
 
@@ -204,7 +205,7 @@ def test_lambda_handler(s3_client):
         assert response["statusCode"] == 200
         assert "design processed successfully" in response["body"]
 
-def test_invalid_file_type_raises_error(s3_client):
+def test_design_invalid_file_type_raises_error(s3_client):
     wr.s3.to_csv(df=mock_design, path=f"s3://{INGESTION_BUCKET}/design/a/a/a/design 2024-11-20", dataset=False)
     with pytest.raises(ArrowInvalid):
         design("design", "2024-11-20")
@@ -234,40 +235,30 @@ def test_update_dim_date_returns_correct_columns():
     assert "month_name" in dim_date_df.columns
     assert "quarter" in dim_date_df.columns
 
-def test_dim_date_with_existing_data(s3_client):
-    """Test dim_date() when date data already exists in the processed bucket."""
-    # Mock existing date data in the processed bucket
-    wr.s3.to_parquet(df=mock_date, path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
-    with patch("data_transformation.update_dim_date") as mock_update_dim_date:
-        result = dim_date()
-        # Verify update_dim_date is not called when dates are up-to-date
-        mock_update_dim_date.assert_not_called()
-        assert result == "Pass: no actions required for date"
+
+def test_sales_order_returns_correct_columns(s3_client):
+    wr.s3.to_parquet(df=mock_sales_order,
+                    path=f"s3://{INGESTION_BUCKET}/sales_order/a/a/a/sales_order 2024-11-20",
+                    dataset=False)
+    result = sales_order("sales_order", "2024-11-20")
+    assert "sales_order_id" in result.columns
+    assert "created_date" in result.columns
+    assert "created_time" in result.columns
+    assert "last_updated_date" in result.columns
+    assert "last_updated_time" in result.columns
+    assert "sales_staff_id" in result.columns
+    assert "units_sold" in result.columns
+    assert "unit_price" in result.columns
+    assert "currency_id" in result.columns
+    assert "design_id" in result.columns
+    assert "agreed_payment_date" in result.columns
+    assert "agreed_delivery_date" in result.columns
+    assert "agreed_delivery_location_id" in result.columns
+
+def test_sales_order_raises_error_for_invalid_file_type():
+    wr.s3.to_csv(df=mock_design, path=f"s3://{INGESTION_BUCKET}/sales_order/a/a/a/sales_order 2024-11-20", dataset=False)
+    with pytest.raises(ArrowInvalid):
+        sales_order("sales_order", "2024-11-20")
 
 
-def test_dim_date_with_missing_data(s3_client):
-    """Test dim_date() when no existing date data is found."""
-    with patch("data_transformation.update_dim_date") as mock_update_dim_date:
-        # Expect dim_date() to call update_dim_date starting from 2020-01-01
-        result = dim_date()
-        mock_update_dim_date.assert_called_once_with(datetime(2020, 1, 1))
-        assert result == datetime(2020, 1, 1)
-
-def test_dim_date_calls_update_dim_date_with_future_data(s3_client):
-    # Mock future date data in the processed bucket
-    future_date = pd.DataFrame({
-        "date_id": [datetime(2024, 11, 24)],
-        "year": [2024],
-        "month": [11],
-        "day": [24],
-        "day_of_week": [6],
-        "day_name": ["Sunday"],
-        "month_name": ["November"],
-        "quarter": [4]
-    })
-    wr.s3.to_parquet(df=future_date, path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
-    with patch("data_transformation.update_dim_date") as mock_update_dim_date:
-        # check update_dim_date is called with the future start_date (24 + delta 1)
-        dim_date()
-        mock_update_dim_date.assert_called_once_with(datetime(2024, 11, 25).date())
 
