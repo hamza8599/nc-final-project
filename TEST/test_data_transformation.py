@@ -216,7 +216,7 @@ def test_update_dim_date_returns_correct_columns():
     assert "month_name" in dim_date_df.columns
     assert "quarter" in dim_date_df.columns
 
-@freeze_time("2024-11-19")
+@freeze_time("2024-10-20")
 def test_dim_date_with_existing_data(s3_client):
     wr.s3.to_parquet(df=mock_date, path=f's3://{PROCESSED_BUCKET}/date/date.parquet', dataset=False)
     result = dim_date()
