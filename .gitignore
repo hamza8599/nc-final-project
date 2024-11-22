@@ -4,3 +4,6 @@ venv
 **/.terraform*
 *.tfstate*
 ingestion-lambda.zip
+process-lambda.zip
+load-lambda.zip
+python
