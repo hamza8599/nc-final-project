@@ -28,7 +28,7 @@ jobs:
           run: make run-checks
 
         - name: Reset Secrets
-          run: python reset_secrets.py
+          run: make run-reset-secrets
 
     # reset-secrets:
     #   name: reset-secrets
