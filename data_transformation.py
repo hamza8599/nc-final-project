@@ -104,7 +104,7 @@ def address(name, datestamp):
 
 
 def update_dim_date(start_date):
-        end_date=datetime.today()
+        end_date=datetime.today()+timedelta(days=30)
         date_range = pd.date_range(start=start_date, end = end_date, freq='D')
         dim_date_df = pd.DataFrame(date_range, columns=['date_id'])
         dim_date_df['year'] = dim_date_df['date_id'].dt.year
@@ -123,7 +123,8 @@ def dim_date():
     try:
         last_updated = wr.s3.read_parquet(f's3://{PROCESSED_BUCKET}/date/*', dataset=True)
         last_date = last_updated.iloc[-1]['date_id'].date()
-        if last_date == datetime.today().date():
+        target_date = datetime.today().date()+timedelta(days=30)
+        if last_date == target_date:
             logger.info(f"Pass: no actions required for date")
             return f'Pass: no actions required for date'
         else:
