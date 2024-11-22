@@ -1,6 +1,5 @@
 from data_extraction import connect_db, reset_secrets, close_db
 import boto3
-from sqlalchemy import text, engine
 
 conn = connect_db("psql_creds")
 secret_manager_client = boto3.client("secretsmanager")
@@ -12,9 +11,6 @@ for table in table_names:
 close_db(conn)
 
 conn = connect_db("data-warehouse-creds")
-result = text("ALTER SEQUENCE sales_record_id RESTART WITH 1")
-with engine.connect() as connection:
-    connection.execute(result)
 
 tables = [
     "fact_sales_order",
