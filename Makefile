@@ -80,3 +80,7 @@ check-coverage:
 
 ## Run all checks
 run-checks: security-test run-black unit-test check-coverage
+
+## Run reset secrets
+run-reset-secrets: 
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} $(PYTHON_INTERPRETER) ./reset_secrets.py)

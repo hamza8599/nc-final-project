@@ -30,11 +30,12 @@ resource "aws_iam_policy" "s3_lambda_policy" {
       {
         Action = [
           "s3:GetObject",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:ListBucket"
         ]
         Effect   = "Allow"
         
-        Resource = ["${aws_s3_bucket.ingestion_bucket.arn}/*", "${aws_s3_bucket.processed_bucket.arn}/*", "${aws_s3_bucket.lambda_code.arn}/*"]
+        Resource = [ "${aws_s3_bucket.ingestion_bucket.arn}", "${aws_s3_bucket.ingestion_bucket.arn}/*", "${aws_s3_bucket.processed_bucket.arn}", "${aws_s3_bucket.processed_bucket.arn}/*", "${aws_s3_bucket.lambda_code.arn}", "${aws_s3_bucket.lambda_code.arn}/*" ]
       },
     ]
   })
