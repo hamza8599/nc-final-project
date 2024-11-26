@@ -1,5 +1,6 @@
 import boto3
 import awswrangler as wr
+import pandas as pd
 from datetime import datetime, timedelta
 import logging
 from botocore.exceptions import ClientError
@@ -31,6 +32,7 @@ def create_engine_conn(secret_name, secrets_manager_client):
         logger.info(f"Alert: Failed on retrieving secrets: {str(e)}")
 
 def load_data(filename, conn):
+    table_name = None  
     try:
         logger.info(f"reading data from {filename}")
         df = wr.s3.read_parquet(f"s3://{PROCESSED_BUCKET}/{filename}/*", dataset=True)
